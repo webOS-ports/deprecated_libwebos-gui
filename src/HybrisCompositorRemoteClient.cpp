@@ -68,10 +68,10 @@ void HybrisCompositorRemoteClient::onIncomingData()
 
 	hybris_register_buffer_handle(buffer->getHandle());
 
-	handleIncomingBuffer(buffer);
+	handleIncomingBuffer(hdr.windowId, buffer);
 }
 
-void HybrisCompositorRemoteClient::handleIncomingBuffer(OffscreenNativeWindowBuffer *buffer)
+void HybrisCompositorRemoteClient::handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer)
 {
 }
 

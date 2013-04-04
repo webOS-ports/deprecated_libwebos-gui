@@ -32,7 +32,7 @@ public:
 	HybrisCompositorRemoteClient(HybrisCompositor *parent, int socketDescriptor);
 
 protected:
-	virtual void handleIncomingBuffer(OffscreenNativeWindowBuffer *buffer);
+	virtual void handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer);
 
 Q_SIGNALS:
 	void disconnected();
