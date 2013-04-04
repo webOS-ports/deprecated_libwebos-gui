@@ -42,4 +42,10 @@ private:
 	QSocketNotifier *m_socketNotifier;
 };
 
+class HybrisCompositorRemoteClientFactory
+{
+public:
+	virtual HybrisCompositorRemoteClient *create(HybrisCompositor *parent, int socketFd) = 0;
+};
+
 #endif

@@ -24,11 +24,15 @@
 #include <QString>
 #include <glib.h>
 
+class HybrisCompositorRemoteClientFactory;
+
 class HybrisCompositor : public QObject
 {
 	Q_OBJECT
 public:
 	static HybrisCompositor* instance();
+
+	void setRemoteClientFactory(HybrisCompositorRemoteClientFactory *factory);
 
 	void onNewConnection();
 
@@ -46,6 +50,7 @@ private:
 	int m_socketFd;
 	GIOChannel *m_channel;
 	gint m_socketWatch;
+	HybrisCompositorRemoteClientFactory *m_remoteClientFactory;
 };
 
 #endif /* HYBRISBUFFERSERVER_H_ */

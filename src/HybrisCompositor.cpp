@@ -36,6 +36,15 @@
 
 static const int kMaxConnections = 100;
 
+class HybrisCompositorRemoteClientFactoryDefault : public HybrisCompositorRemoteClientFactory
+{
+public:
+	virtual HybrisCompositorRemoteClient *create(HybrisCompositor *parent, int socketFd)
+	{
+		return new HybrisCompositorRemoteClient(parent, socketFd);
+	}
+};
+
 HybrisCompositor* HybrisCompositor::instance()
 {
 	static HybrisCompositor* s_server = 0;
@@ -49,13 +58,22 @@ HybrisCompositor* HybrisCompositor::instance()
 HybrisCompositor::HybrisCompositor()
 	: m_socketPath("/tmp/sysmgr_compositor"),
 	  m_channel(0),
-	  m_socketWatch(-1)
+	  m_socketWatch(-1),
+	  m_remoteClientFactory(new HybrisCompositorRemoteClientFactoryDefault)
 {
 	setup();
 }
 
 HybrisCompositor::~HybrisCompositor()
 {
+}
+
+void HybrisCompositor::setRemoteClientFactory(HybrisCompositorRemoteClientFactory *factory)
+{
+	if (m_remoteClientFactory)
+		delete m_remoteClientFactory;
+
+	m_remoteClientFactory = factory;
 }
 
 void HybrisCompositor::setup()
@@ -132,6 +150,6 @@ void HybrisCompositor::onNewConnection()
 		return;
 	}
 
-	HybrisCompositorRemoteClient *client = new HybrisCompositorRemoteClient(this, clientSocketFd);
+	HybrisCompositorRemoteClient *client = m_remoteClientFactory->create(this, clientSocketFd);
 	connect(client, SIGNAL(disconnected()), this, SLOT(onClientDisconnected()));
 }
