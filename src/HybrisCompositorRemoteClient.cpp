@@ -68,28 +68,10 @@ void HybrisCompositorRemoteClient::onIncomingData()
 
 	hybris_register_buffer_handle(buffer->getHandle());
 
-#if 0
-	Window *clientWindow = IpcServer::instance()->findWindow(hdr.windowId);
-	if (!clientWindow) {
-		qWarning() << __PRETTY_FUNCTION__ << "Did not found corressponding window for id" << hdr.windowId;
-		return;
-	}
+	handleIncomingBuffer(buffer);
+}
 
-	HostWindow *clientHostWindow = static_cast<HostWindow*>(clientWindow);
-	if (!clientHostWindow) {
-		qWarning() << __PRETTY_FUNCTION__ << "Window with id" << hdr.windowId << "is not a host window!";
-		return;
-	}
-
-	const HostWindowDataOpenGLHybris *windowData =
-		static_cast<const HostWindowDataOpenGLHybris*>(clientHostWindow->hostWindowData());
-	if (!windowData) {
-		qWarning() << __PRETTY_FUNCTION__ << "Window with id" << hdr.windowId << "is not a hybris based window!";
-		return;
-	}
-
-	windowData->postBuffer(buffer);
-	clientHostWindow->onUpdateFullWindow();
-#endif
+void HybrisCompositorRemoteClient::handleIncomingBuffer(OffscreenNativeWindowBuffer *buffer)
+{
 }
 

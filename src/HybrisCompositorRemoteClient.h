@@ -22,6 +22,7 @@
 #include <QObject>
 #include <QSocketNotifier>
 
+class OffscreenNativeWindowBuffer;
 class HybrisCompositor;
 
 class HybrisCompositorRemoteClient : public QObject
@@ -29,6 +30,9 @@ class HybrisCompositorRemoteClient : public QObject
 	Q_OBJECT
 public:
 	HybrisCompositorRemoteClient(HybrisCompositor *parent, int socketDescriptor);
+
+protected:
+	virtual void handleIncomingBuffer(OffscreenNativeWindowBuffer *buffer);
 
 Q_SIGNALS:
 	void disconnected();
