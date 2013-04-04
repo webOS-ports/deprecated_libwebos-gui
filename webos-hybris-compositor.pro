@@ -15,11 +15,13 @@ contains(DISTRO_TYPE, release) {
 
 HEADERS += \
     src/HybrisCompositor.h \
-    src/HybrisCompositorRemoteClient.h
+    src/HybrisCompositorRemoteClient.h \
+    src/HybrisCompositorClient.h
 
 SOURCES += \
     src/HybrisCompositor.cpp \
-    src/HybrisCompositorRemoteClient.cpp
+    src/HybrisCompositorRemoteClient.cpp \
+    src/HybrisCompositorClient.cpp
 
 OBJECTS_DIR = .obj
 MOC_DIR = .moc
@@ -35,7 +37,8 @@ isEmpty(STAGING_LIBDIR):STAGING_LIBDIR = $$(STAGING_DIR)/lib
 headers.path = $${STAGING_INCDIR}/WebosHybrisCompositor
 headers.files += \
     src/HybrisCompositor.h \
-    src/HybrisCompositorRemoteClient.h
+    src/HybrisCompositorRemoteClient.h \
+    src/HybrisCompositorClient.h
 
 INSTALLS += headers
 
