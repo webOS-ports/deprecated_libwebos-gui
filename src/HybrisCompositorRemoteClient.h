@@ -30,6 +30,7 @@ class HybrisCompositorRemoteClient : public QObject
 	Q_OBJECT
 public:
 	HybrisCompositorRemoteClient(HybrisCompositor *parent, int socketDescriptor);
+	virtual ~HybrisCompositorRemoteClient();
 
 protected:
 	virtual void handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer);

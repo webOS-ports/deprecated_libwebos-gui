@@ -48,6 +48,11 @@ HybrisCompositorRemoteClient::HybrisCompositorRemoteClient(HybrisCompositor *par
 	connect(m_socketNotifier, SIGNAL(activated(int)), this, SLOT(onIncomingData()));
 }
 
+HybrisCompositorRemoteClient::~HybrisCompositorRemoteClient()
+{
+	m_socketNotifier->deleteLater();
+}
+
 void HybrisCompositorRemoteClient::onIncomingData()
 {
 	int ret;
