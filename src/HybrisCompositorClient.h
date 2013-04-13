@@ -24,6 +24,7 @@
 #include <string>
 
 #include <EGL/eglhybris.h>
+#include "OffscreenNativeWindow.h"
 
 class HybrisCompositorClient : QObject
 {

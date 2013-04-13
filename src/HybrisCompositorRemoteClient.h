@@ -22,7 +22,8 @@
 #include <QObject>
 #include <QSocketNotifier>
 
-class OffscreenNativeWindowBuffer;
+#include "OffscreenNativeWindow.h"
+
 class HybrisCompositor;
 
 class HybrisCompositorRemoteClient : public QObject
