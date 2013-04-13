@@ -4,6 +4,8 @@ TEMPLATE = lib
 CONFIG += warn_on
 CONFIG += building-libs
 CONFIG += depend_includepath
+CONFIG += create_pc
+CONFIG += create_prl no_install_prl
 
 CONFIG += link_pkgconfig
 PKGCONFIG = glib-2.0 gthread-2.0 gio-unix-2.0
@@ -49,3 +51,9 @@ INSTALLS += headers
 
 target.path = $$STAGING_LIBDIR
 INSTALLS += target
+
+QMAKE_PKGCONFIG_NAME = libWebosHybrisCompositor
+QMAKE_PKGCONFIG_DESCRIPTION = The webOS compositor library based on libhybris
+QMAKE_PKGCONFIG_LIBDIR = $$target.path
+QMAKE_PKGCONFIG_INCDIR = $$headers.path
+QMAKE_PKGCONFIG_DESTDIR = pkgconfig
