@@ -16,16 +16,16 @@ contains(DISTRO_TYPE, release) {
 }
 
 HEADERS += \
-    src/HybrisCompositor.h \
-    src/HybrisCompositorRemoteClient.h \
-    src/HybrisCompositorClient.h \
+    src/WebosSurfaceManager.h \
+    src/WebosSurfaceManagerRemoteClient.h \
+    src/WebosSurfaceManagerClient.h \
     src/OffscreenNativeWindow.h
 
 SOURCES += \
     src/util/fdpass.c \
-    src/HybrisCompositor.cpp \
-    src/HybrisCompositorRemoteClient.cpp \
-    src/HybrisCompositorClient.cpp \
+    src/WebosSurfaceManager.cpp \
+    src/WebosSurfaceManagerRemoteClient.cpp \
+    src/WebosSurfaceManagerClient.cpp \
     src/OffscreenNativeWindow.cpp \
     src/OffscreenNativeWindowBuffer.cpp
 
@@ -42,9 +42,9 @@ isEmpty(STAGING_LIBDIR):STAGING_LIBDIR = $$(STAGING_DIR)/lib
 
 headers.path = $${STAGING_INCDIR}/WebosHybrisCompositor
 headers.files += \
-    src/HybrisCompositor.h \
-    src/HybrisCompositorRemoteClient.h \
-    src/HybrisCompositorClient.h \
+    src/WebosSurfaceManager.h \
+    src/WebosSurfaceManagerRemoteClient.h \
+    src/WebosSurfaceManagerClient.h \
     src/OffscreenNativeWindow.h
 
 INSTALLS += headers

@@ -25,25 +25,25 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "HybrisCompositorClient.h"
+#include "WebosSurfaceManagerClient.h"
 
 struct compositor_ctrl_hdr {
     uint32_t windowId;
     uint32_t command;
 };
 
-HybrisCompositorClient::HybrisCompositorClient(QObject *parent)
+WebosSurfaceManagerClient::WebosSurfaceManagerClient(QObject *parent)
     : QObject(parent),
-      m_socketPath("/tmp/sysmgr_compositor")
+      m_socketPath("/tmp/surface_manager")
 {
     QTimer::singleShot(0, this, SLOT(init()));
 }
 
-HybrisCompositorClient::~HybrisCompositorClient()
+WebosSurfaceManagerClient::~WebosSurfaceManagerClient()
 {
 }
 
-void HybrisCompositorClient::init()
+void WebosSurfaceManagerClient::init()
 {
     struct sockaddr_un socketAddr;
 
@@ -73,7 +73,7 @@ void HybrisCompositorClient::init()
     emit serverConnected();
 }
 
-void HybrisCompositorClient::onIncomingData()
+void WebosSurfaceManagerClient::onIncomingData()
 {
     char buffer;
     int ret;
@@ -86,7 +86,7 @@ void HybrisCompositorClient::onIncomingData()
     }
 }
 
-void HybrisCompositorClient::postBuffer(int winId, OffscreenNativeWindowBuffer *buffer)
+void WebosSurfaceManagerClient::postBuffer(int winId, OffscreenNativeWindowBuffer *buffer)
 {
     struct compositor_ctrl_hdr hdr;
     int ret;

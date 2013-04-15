@@ -24,14 +24,14 @@
 
 #include "OffscreenNativeWindow.h"
 
-class HybrisCompositor;
+class WebosSurfaceManager;
 
-class HybrisCompositorRemoteClient : public QObject
+class WebosSurfaceManagerRemoteClient : public QObject
 {
 	Q_OBJECT
 public:
-	HybrisCompositorRemoteClient(HybrisCompositor *parent, int socketDescriptor);
-	virtual ~HybrisCompositorRemoteClient();
+	WebosSurfaceManagerRemoteClient(WebosSurfaceManager *parent, int socketDescriptor);
+	virtual ~WebosSurfaceManagerRemoteClient();
 
 protected:
 	virtual void handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer);
@@ -43,15 +43,15 @@ private Q_SLOTS:
 	void onIncomingData();
 
 private:
-	HybrisCompositor *m_parent;
+	WebosSurfaceManager *m_parent;
 	int m_socketFd;
 	QSocketNotifier *m_socketNotifier;
 };
 
-class HybrisCompositorRemoteClientFactory
+class WebosSurfaceManagerRemoteClientFactory
 {
 public:
-	virtual HybrisCompositorRemoteClient *create(HybrisCompositor *parent, int socketFd) = 0;
+	virtual WebosSurfaceManagerRemoteClient *create(WebosSurfaceManager *parent, int socketFd) = 0;
 };
 
 #endif

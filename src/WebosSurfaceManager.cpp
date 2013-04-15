@@ -31,44 +31,44 @@
 
 #include <EGL/eglhybris.h>
 
-#include "HybrisCompositor.h"
-#include "HybrisCompositorRemoteClient.h"
+#include "WebosSurfaceManager.h"
+#include "WebosSurfaceManagerRemoteClient.h"
 
 static const int kMaxConnections = 100;
 
-class HybrisCompositorRemoteClientFactoryDefault : public HybrisCompositorRemoteClientFactory
+class WebosSurfaceManagerRemoteClientFactoryDefault : public WebosSurfaceManagerRemoteClientFactory
 {
 public:
-	virtual HybrisCompositorRemoteClient *create(HybrisCompositor *parent, int socketFd)
+	virtual WebosSurfaceManagerRemoteClient *create(WebosSurfaceManager *parent, int socketFd)
 	{
-		return new HybrisCompositorRemoteClient(parent, socketFd);
+		return new WebosSurfaceManagerRemoteClient(parent, socketFd);
 	}
 };
 
-HybrisCompositor* HybrisCompositor::instance()
+WebosSurfaceManager* WebosSurfaceManager::instance()
 {
-	static HybrisCompositor* s_server = 0;
+	static WebosSurfaceManager* s_server = 0;
 
 	if (G_UNLIKELY(s_server == 0))
-		s_server = new HybrisCompositor;
+		s_server = new WebosSurfaceManager;
 
 	return s_server;
 }
 
-HybrisCompositor::HybrisCompositor()
-	: m_socketPath("/tmp/sysmgr_compositor"),
+WebosSurfaceManager::WebosSurfaceManager()
+	: m_socketPath("/tmp/surface_manager"),
 	  m_channel(0),
 	  m_socketWatch(-1),
-	  m_remoteClientFactory(new HybrisCompositorRemoteClientFactoryDefault)
+	  m_remoteClientFactory(new WebosSurfaceManagerRemoteClientFactoryDefault)
 {
 	setup();
 }
 
-HybrisCompositor::~HybrisCompositor()
+WebosSurfaceManager::~WebosSurfaceManager()
 {
 }
 
-void HybrisCompositor::setRemoteClientFactory(HybrisCompositorRemoteClientFactory *factory)
+void WebosSurfaceManager::setRemoteClientFactory(WebosSurfaceManagerRemoteClientFactory *factory)
 {
 	if (m_remoteClientFactory)
 		delete m_remoteClientFactory;
@@ -76,7 +76,7 @@ void HybrisCompositor::setRemoteClientFactory(HybrisCompositorRemoteClientFactor
 	m_remoteClientFactory = factory;
 }
 
-void HybrisCompositor::setup()
+void WebosSurfaceManager::setup()
 {
 	if (QFile::exists(m_socketPath))
 		QFile::remove(m_socketPath);
@@ -119,20 +119,20 @@ void HybrisCompositor::setup()
 			  __PRETTY_FUNCTION__, __LINE__);
 }
 
-gboolean HybrisCompositor::onNewConnectionCb(GIOChannel *channel, GIOCondition condition, gpointer user_data)
+gboolean WebosSurfaceManager::onNewConnectionCb(GIOChannel *channel, GIOCondition condition, gpointer user_data)
 {
-	HybrisCompositor *compositor = reinterpret_cast<HybrisCompositor*>(user_data);
-	compositor->onNewConnection();
+	WebosSurfaceManager *manager = reinterpret_cast<WebosSurfaceManager*>(user_data);
+	manager->onNewConnection();
 	return TRUE;
 }
 
-void HybrisCompositor::onClientDisconnected()
+void WebosSurfaceManager::onClientDisconnected()
 {
-	HybrisCompositorRemoteClient *client = qobject_cast<HybrisCompositorRemoteClient*>(sender());
+	WebosSurfaceManagerRemoteClient *client = qobject_cast<WebosSurfaceManagerRemoteClient*>(sender());
 	client->deleteLater();
 }
 
-void HybrisCompositor::onNewConnection()
+void WebosSurfaceManager::onNewConnection()
 {
 	struct sockaddr_un  socketAddr;
 	socklen_t socketAddrLen;
@@ -150,6 +150,6 @@ void HybrisCompositor::onNewConnection()
 		return;
 	}
 
-	HybrisCompositorRemoteClient *client = m_remoteClientFactory->create(this, clientSocketFd);
+	WebosSurfaceManagerRemoteClient *client = m_remoteClientFactory->create(this, clientSocketFd);
 	connect(client, SIGNAL(disconnected()), this, SLOT(onClientDisconnected()));
 }

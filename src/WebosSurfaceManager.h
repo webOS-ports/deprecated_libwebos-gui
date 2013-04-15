@@ -24,15 +24,15 @@
 #include <QString>
 #include <glib.h>
 
-class HybrisCompositorRemoteClientFactory;
+class WebosSurfaceManagerRemoteClientFactory;
 
-class HybrisCompositor : public QObject
+class WebosSurfaceManager : public QObject
 {
 	Q_OBJECT
 public:
-	static HybrisCompositor* instance();
+	static WebosSurfaceManager* instance();
 
-	void setRemoteClientFactory(HybrisCompositorRemoteClientFactory *factory);
+	void setRemoteClientFactory(WebosSurfaceManagerRemoteClientFactory *factory);
 
 	void onNewConnection();
 
@@ -40,8 +40,8 @@ public Q_SLOTS:
 	void onClientDisconnected();
 
 private:
-	HybrisCompositor();
-	~HybrisCompositor();
+	WebosSurfaceManager();
+	~WebosSurfaceManager();
 
 	static gboolean onNewConnectionCb(GIOChannel *channel, GIOCondition condition, gpointer user_data);
 	void setup();
@@ -50,7 +50,7 @@ private:
 	int m_socketFd;
 	GIOChannel *m_channel;
 	gint m_socketWatch;
-	HybrisCompositorRemoteClientFactory *m_remoteClientFactory;
+	WebosSurfaceManagerRemoteClientFactory *m_remoteClientFactory;
 };
 
 #endif /* HYBRISBUFFERSERVER_H_ */

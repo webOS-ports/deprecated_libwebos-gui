@@ -31,15 +31,15 @@
 
 #include <EGL/eglhybris.h>
 
-#include "HybrisCompositor.h"
-#include "HybrisCompositorRemoteClient.h"
+#include "WebosSurfaceManager.h"
+#include "WebosSurfaceManagerRemoteClient.h"
 
 struct compositor_ctrl_hdr {
     uint32_t windowId;
     uint32_t command;
 };
 
-HybrisCompositorRemoteClient::HybrisCompositorRemoteClient(HybrisCompositor *parent, int socketFd)
+WebosSurfaceManagerRemoteClient::WebosSurfaceManagerRemoteClient(WebosSurfaceManager *parent, int socketFd)
 	: QObject(parent),
 	  m_parent(parent),
 	  m_socketFd(socketFd)
@@ -48,12 +48,12 @@ HybrisCompositorRemoteClient::HybrisCompositorRemoteClient(HybrisCompositor *par
 	connect(m_socketNotifier, SIGNAL(activated(int)), this, SLOT(onIncomingData()));
 }
 
-HybrisCompositorRemoteClient::~HybrisCompositorRemoteClient()
+WebosSurfaceManagerRemoteClient::~WebosSurfaceManagerRemoteClient()
 {
 	m_socketNotifier->deleteLater();
 }
 
-void HybrisCompositorRemoteClient::onIncomingData()
+void WebosSurfaceManagerRemoteClient::onIncomingData()
 {
 	int ret;
 	struct compositor_ctrl_hdr hdr;
@@ -76,7 +76,7 @@ void HybrisCompositorRemoteClient::onIncomingData()
 	handleIncomingBuffer(hdr.windowId, buffer);
 }
 
-void HybrisCompositorRemoteClient::handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer)
+void WebosSurfaceManagerRemoteClient::handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer)
 {
 }
 

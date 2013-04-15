@@ -26,12 +26,12 @@
 #include <EGL/eglhybris.h>
 #include "OffscreenNativeWindow.h"
 
-class HybrisCompositorClient : QObject
+class WebosSurfaceManagerClient : QObject
 {
     Q_OBJECT
 public:
-    HybrisCompositorClient(QObject *parent = 0);
-    ~HybrisCompositorClient();
+    WebosSurfaceManagerClient(QObject *parent = 0);
+    ~WebosSurfaceManagerClient();
 
     void postBuffer(int winId, OffscreenNativeWindowBuffer *buffer);
 
