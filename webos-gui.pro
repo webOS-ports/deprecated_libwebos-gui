@@ -1,4 +1,4 @@
-TARGET = WebosHybrisCompositor
+TARGET = webos-gui
 TEMPLATE = lib
 
 CONFIG += warn_on
@@ -40,7 +40,7 @@ isEmpty(STAGING_INCDIR):STAGING_INCDIR = $$(STAGING_DIR)/include
 STAGING_LIBDIR = $$(STAGING_LIBDIR)
 isEmpty(STAGING_LIBDIR):STAGING_LIBDIR = $$(STAGING_DIR)/lib
 
-headers.path = $${STAGING_INCDIR}/WebosHybrisCompositor
+headers.path = $${STAGING_INCDIR}/webos-gui
 headers.files += \
     src/WebosSurfaceManager.h \
     src/WebosSurfaceManagerRemoteClient.h \
@@ -52,8 +52,8 @@ INSTALLS += headers
 target.path = $$STAGING_LIBDIR
 INSTALLS += target
 
-QMAKE_PKGCONFIG_NAME = libWebosHybrisCompositor
-QMAKE_PKGCONFIG_DESCRIPTION = The webOS compositor library based on libhybris
+QMAKE_PKGCONFIG_NAME = libwebos-gui
+QMAKE_PKGCONFIG_DESCRIPTION = The webOS gui library
 QMAKE_PKGCONFIG_LIBDIR = $$target.path
 QMAKE_PKGCONFIG_INCDIR = $$headers.path
 QMAKE_PKGCONFIG_DESTDIR = pkgconfig
