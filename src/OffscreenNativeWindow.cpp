@@ -371,3 +371,8 @@ void OffscreenNativeWindow::resizeBuffer(int id, OffscreenNativeWindowBuffer *bu
 	buffer->width = width;
 	buffer->height = height;
 }
+
+unsigned int OffscreenNativeWindow::bufferCount()
+{
+	return NUM_BUFFERS;
+}

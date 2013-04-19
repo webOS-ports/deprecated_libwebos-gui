@@ -48,6 +48,8 @@ public:
 
 	void resize(unsigned int width, unsigned int height);
 
+	static unsigned int bufferCount();
+
 protected:
 	// overloads from BaseNativeWindow
 	virtual int setSwapInterval(int interval);
