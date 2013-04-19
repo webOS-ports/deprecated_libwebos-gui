@@ -28,8 +28,12 @@ public:
 	void lock() { _locked = true; }
 	void unlock() { _locked = false; }
 
+	unsigned int index();
+	void setIndex(unsigned int index);
+
 private:
 	bool _locked;
+	unsigned int _index;
 };
 
 class OffscreenNativeWindow : public BaseNativeWindow

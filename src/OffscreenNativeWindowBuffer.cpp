@@ -27,6 +27,7 @@
 #include "OffscreenNativeWindow.h"
 
 struct buffer_info_header {
+	uint32_t index;
 	int32_t width;
 	int32_t height;
 	int32_t stride;
@@ -37,13 +38,15 @@ struct buffer_info_header {
 };
 
 OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer()
-	: _locked(false)
+	: _locked(false),
+	  _index(0)
 {
 }
 
 OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer(unsigned int width, unsigned int height,
 							 unsigned int format, unsigned int usage)
-	: _locked(false)
+	: _locked(false),
+	  _index(0)
 {
 	ANativeWindowBuffer::width = width;
 	ANativeWindowBuffer::height = height;
@@ -59,6 +62,7 @@ int OffscreenNativeWindowBuffer::writeToFd(int fd)
 	if (!handle)
 		return -EINVAL;
 
+	hdr.index = _index;
 	hdr.width = width;
 	hdr.height = height;
 	hdr.stride = stride;
@@ -104,6 +108,7 @@ int OffscreenNativeWindowBuffer::readFromFd(int fd)
 	printf("Buffer info: width=%i, height=%i, stride=%i, format=%i usage=%i numFds=%i, numInts=%i\n",
 		   hdr.width, hdr.height, hdr.stride, hdr.format, hdr.usage, hdr.num_fds, hdr.num_ints);
 
+	_index = hdr.index;
 	width = hdr.width;
 	height = hdr.height;
 	stride = hdr.stride;
@@ -136,6 +141,16 @@ int OffscreenNativeWindowBuffer::readFromFd(int fd)
 buffer_handle_t OffscreenNativeWindowBuffer::getHandle()
 {
 	return handle;
+}
+
+unsigned int OffscreenNativeWindowBuffer::index()
+{
+	return _index;
+}
+
+void OffscreenNativeWindowBuffer::setIndex(unsigned int index)
+{
+	_index = index;
 }
 
 // vim:ts=4:sw=4:noexpandtab

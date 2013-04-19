@@ -196,6 +196,7 @@ int OffscreenNativeWindow::dequeueBuffer(BaseNativeWindowBuffer **buffer)
 
 	if(m_buffers[m_tailbuffer] == 0) {
 		m_buffers[m_tailbuffer] = allocateBuffer();
+		m_buffers[m_tailbuffer]->setIndex(m_tailbuffer);
 
 		TRACE("buffer %i is at %p (native %p) handle=%i stride=%i\n",
 				m_tailbuffer, m_buffers[m_tailbuffer], (ANativeWindowBuffer*) m_buffers[m_tailbuffer],
