@@ -10,7 +10,7 @@ libwebos_gui_la_SOURCES = \
 	src/WebosSurfaceManager.cpp \
 	src/WebosSurfaceManagerRemoteClient.cpp
 libwebos_gui_la_CPPFLAGS = $(GLIB_CFLAGS)
-libwebos_gui_la_LIBADD = $(GLIB_LIBS)
+libwebos_gui_la_LIBADD = $(GLIB_LIBS) -lhybris-eglplatformcommon
 
 libwebos_guidir = $(includedir)/webos-gui
 libwebos_gui_DATA = \
