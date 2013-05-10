@@ -5,8 +5,6 @@
 #include <android/hardware/gralloc.h>
 #include <EGL/eglhybris.h>
 
-#define NUM_BUFFERS 3
-
 class OffscreenNativeWindowBuffer : public BaseNativeWindowBuffer
 {
 	friend class OffscreenNativeWindow;
@@ -48,7 +46,7 @@ public:
 
 	void resize(unsigned int width, unsigned int height);
 
-	static unsigned int bufferCount();
+	unsigned int bufferCount();
 
 protected:
 	// overloads from BaseNativeWindow
@@ -67,6 +65,7 @@ protected:
 	virtual unsigned int transformHint() const;
 	// perform calls
 	virtual int setUsage(int usage);
+	virtual int setBufferCount(int cnt);
 	virtual int setBuffersFormat(int format);
 	virtual int setBuffersDimensions(int width, int height);
 private:
@@ -78,7 +77,8 @@ private:
 	unsigned int m_defaultWidth;
 	unsigned int m_defaultHeight;
 	unsigned int m_usage;
-	OffscreenNativeWindowBuffer* m_buffers[NUM_BUFFERS];
+	unsigned int m_buffercount;
+	OffscreenNativeWindowBuffer** m_buffers;
 	alloc_device_t* m_alloc;
 	const gralloc_module_t* m_gralloc;
 private:
