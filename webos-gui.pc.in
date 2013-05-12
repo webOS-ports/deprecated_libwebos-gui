@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+datarootdir=@datarootdir@
+datadir=@datadir@
+
+Name: libwebos-gui
+Description: The webOS gui library
+Version: @VERSION@
+Requires:
+Libs: -L${libdir} -lwebos-gui
+Cflags: -I${includedir}/webos-gui
