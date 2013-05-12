@@ -6,7 +6,7 @@ datarootdir=@datarootdir@
 datadir=@datadir@
 
 Name: libwebos-gui
-Description: The webOS gui library
+Description: The webOS graphics library
 Version: @VERSION@
 Requires:
 Libs: -L${libdir} -lwebos-gui
