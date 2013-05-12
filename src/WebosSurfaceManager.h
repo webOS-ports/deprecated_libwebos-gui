@@ -19,25 +19,20 @@
 #ifndef HYBRISBUFFERSERVER_H_
 #define HYBRISBUFFERSERVER_H_
 
-#include <QString>
-#include <QSocketNotifier>
-#include <QString>
 #include <glib.h>
 
+class WebosSurfaceManagerRemoteClient;
 class WebosSurfaceManagerRemoteClientFactory;
 
-class WebosSurfaceManager : public QObject
+class WebosSurfaceManager
 {
-	Q_OBJECT
 public:
 	static WebosSurfaceManager* instance();
 
 	void setRemoteClientFactory(WebosSurfaceManagerRemoteClientFactory *factory);
 
 	void onNewConnection();
-
-public Q_SLOTS:
-	void onClientDisconnected();
+	void onClientDisconnected(WebosSurfaceManagerRemoteClient *client);
 
 private:
 	WebosSurfaceManager();
@@ -46,7 +41,7 @@ private:
 	static gboolean onNewConnectionCb(GIOChannel *channel, GIOCondition condition, gpointer user_data);
 	void setup();
 
-	QString m_socketPath;
+	gchar *m_socketPath;
 	int m_socketFd;
 	GIOChannel *m_channel;
 	gint m_socketWatch;

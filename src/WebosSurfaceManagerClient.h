@@ -18,36 +18,31 @@
 #ifndef HYBRISCOMPOSITORCLIENT_H
 #define HYBRISCOMPOSITORCLIENT_H
 
-#include <QObject>
-#include <QSocketNotifier>
 #include <glib.h>
 #include <string>
 
 #include <EGL/eglhybris.h>
 #include "OffscreenNativeWindow.h"
 
-class WebosSurfaceManagerClient : QObject
+class WebosSurfaceManagerClient
 {
-    Q_OBJECT
 public:
-    WebosSurfaceManagerClient(QObject *parent = 0);
+    WebosSurfaceManagerClient();
     ~WebosSurfaceManagerClient();
 
     void postBuffer(int winId, OffscreenNativeWindowBuffer *buffer);
 
-signals:
-    void serverDisconnected();
-    void serverConnected();
-
-private slots:
     void onIncomingData();
+
+    static gboolean onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data);
+    static gboolean initCb(gpointer user_data);
 
 private:
     int m_socketFd;
-    std::string m_socketPath;
-    QSocketNotifier *m_socketNotifier;
+    gchar *m_socketPath;
+    GIOChannel *m_channel;
+    guint m_socketWatch;
 
-private Q_SLOTS:
     void init();
 };
 

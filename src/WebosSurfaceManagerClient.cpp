@@ -20,8 +20,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <errno.h>
-#include <QTimer>
-#include <QDebug>
 #include <stdint.h>
 #include <unistd.h>
 
@@ -32,15 +30,24 @@ struct compositor_ctrl_hdr {
     uint32_t command;
 };
 
-WebosSurfaceManagerClient::WebosSurfaceManagerClient(QObject *parent)
-    : QObject(parent),
-      m_socketPath("/tmp/surface_manager")
+WebosSurfaceManagerClient::WebosSurfaceManagerClient()
+    : m_socketFd(-1),
+      m_socketPath("/tmp/surface_manager"),
+      m_channel(0),
+      m_socketWatch(0)
 {
-    QTimer::singleShot(0, this, SLOT(init()));
+    g_idle_add(WebosSurfaceManagerClient::initCb, this);
 }
 
 WebosSurfaceManagerClient::~WebosSurfaceManagerClient()
 {
+}
+
+gboolean WebosSurfaceManagerClient::initCb(gpointer user_data)
+{
+    WebosSurfaceManagerClient *client = reinterpret_cast<WebosSurfaceManagerClient*>(user_data);
+    client->init();
+    return TRUE;
 }
 
 void WebosSurfaceManagerClient::init()
@@ -56,21 +63,27 @@ void WebosSurfaceManagerClient::init()
 
     memset(&socketAddr, 0, sizeof(socketAddr));
     socketAddr.sun_family = AF_LOCAL;
-    strncpy(socketAddr.sun_path, m_socketPath.c_str(), G_N_ELEMENTS(socketAddr.sun_path));
+    strncpy(socketAddr.sun_path, m_socketPath, G_N_ELEMENTS(socketAddr.sun_path));
     socketAddr.sun_path[G_N_ELEMENTS(socketAddr.sun_path)-1] = '\0';
 
     if (::connect(m_socketFd, (struct sockaddr*) &socketAddr,
                   SUN_LEN(&socketAddr)) != 0) {
         g_critical("%s:%d Failed to connect to socket: %s",
                    __PRETTY_FUNCTION__, __LINE__, strerror(errno));
-        emit serverDisconnected();
         return;
     }
 
-    m_socketNotifier = new QSocketNotifier(m_socketFd, QSocketNotifier::Read, this);
-    connect(m_socketNotifier, SIGNAL(activated(int)), this, SLOT(onIncomingData()));
+    m_channel =  g_io_channel_unix_new(m_socketFd);
+    m_socketWatch = g_io_add_watch_full(m_channel, G_PRIORITY_DEFAULT, G_IO_IN,
+                                        onIncomingDataCb, this, NULL);
 
-    emit serverConnected();
+}
+
+gboolean WebosSurfaceManagerClient::onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data)
+{
+    WebosSurfaceManagerClient *client = reinterpret_cast<WebosSurfaceManagerClient*>(user_data);
+    client->onIncomingData();
+    return TRUE;
 }
 
 void WebosSurfaceManagerClient::onIncomingData()
@@ -82,7 +95,6 @@ void WebosSurfaceManagerClient::onIncomingData()
     if (ret <= 0) {
         close(m_socketFd);
         m_socketFd = -1;
-        emit serverDisconnected();
     }
 }
 

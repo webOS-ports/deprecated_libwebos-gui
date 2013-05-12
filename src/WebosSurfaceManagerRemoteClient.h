@@ -19,33 +19,27 @@
 #ifndef HYBRISCOMPOSITORREMOTECLIENT_H_
 #define HYBRISCOMPOSITORREMOTECLIENT_H_
 
-#include <QObject>
-#include <QSocketNotifier>
-
 #include "OffscreenNativeWindow.h"
 
 class WebosSurfaceManager;
 
-class WebosSurfaceManagerRemoteClient : public QObject
+class WebosSurfaceManagerRemoteClient
 {
-	Q_OBJECT
 public:
 	WebosSurfaceManagerRemoteClient(WebosSurfaceManager *parent, int socketDescriptor);
 	virtual ~WebosSurfaceManagerRemoteClient();
 
+	void onIncomingData();
+	static gboolean onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data);
+
 protected:
 	virtual void handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer);
-
-Q_SIGNALS:
-	void disconnected();
-
-private Q_SLOTS:
-	void onIncomingData();
 
 private:
 	WebosSurfaceManager *m_parent;
 	int m_socketFd;
-	QSocketNotifier *m_socketNotifier;
+	GIOChannel *m_channel;
+	gint m_socketWatch;
 };
 
 class WebosSurfaceManagerRemoteClientFactory

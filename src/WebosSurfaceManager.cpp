@@ -16,10 +16,8 @@
 *
 * LICENSE@@@ */
 
-#include <QDebug>
-#include <QFile>
-
 #include <glib.h>
+#include <glib/gstdio.h>
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -28,8 +26,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
-
-#include <EGL/eglhybris.h>
 
 #include "WebosSurfaceManager.h"
 #include "WebosSurfaceManagerRemoteClient.h"
@@ -78,8 +74,8 @@ void WebosSurfaceManager::setRemoteClientFactory(WebosSurfaceManagerRemoteClient
 
 void WebosSurfaceManager::setup()
 {
-	if (QFile::exists(m_socketPath))
-		QFile::remove(m_socketPath);
+	if (g_file_test(m_socketPath, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))
+		g_remove(m_socketPath);
 
 	g_message("%s: %d Initializing buffer server ...",
 			  __PRETTY_FUNCTION__, __LINE__);
@@ -93,19 +89,19 @@ void WebosSurfaceManager::setup()
 
 	struct sockaddr_un socketAddr;
 	socketAddr.sun_family = AF_LOCAL;
-	::strncpy(socketAddr.sun_path, m_socketPath.toAscii().data(),
+	::strncpy(socketAddr.sun_path, m_socketPath,
 			  G_N_ELEMENTS(socketAddr.sun_path));
 	socketAddr.sun_path[G_N_ELEMENTS(socketAddr.sun_path)-1] = '\0';
 
 	if (::bind(m_socketFd, (struct sockaddr*) &socketAddr, SUN_LEN(&socketAddr)) != 0) {
-		qWarning() << __PRETTY_FUNCTION__ << "Failed to bind socket";
+		g_warning("%s: Failed to bind socket", __PRETTY_FUNCTION__);
 		close(m_socketFd);
 		m_socketFd = -1;
 		return;
 	}
 
 	if (::listen(m_socketFd, kMaxConnections) != 0) {
-		qWarning() << __PRETTY_FUNCTION__ << "Failed to listen on socket";
+		g_warning("%s: Failed to listen on socket", __PRETTY_FUNCTION__);
 		close(m_socketFd);
 		m_socketFd = -1;
 		return;
@@ -126,10 +122,9 @@ gboolean WebosSurfaceManager::onNewConnectionCb(GIOChannel *channel, GIOConditio
 	return TRUE;
 }
 
-void WebosSurfaceManager::onClientDisconnected()
+void WebosSurfaceManager::onClientDisconnected(WebosSurfaceManagerRemoteClient *client)
 {
-	WebosSurfaceManagerRemoteClient *client = qobject_cast<WebosSurfaceManagerRemoteClient*>(sender());
-	client->deleteLater();
+	delete client;
 }
 
 void WebosSurfaceManager::onNewConnection()
@@ -138,18 +133,17 @@ void WebosSurfaceManager::onNewConnection()
 	socklen_t socketAddrLen;
 	int clientSocketFd = -1;
 
-	qDebug() << __PRETTY_FUNCTION__ << "New buffer sharing client connected";
+	g_message("%s: New buffer sharing client connected", __PRETTY_FUNCTION__);
 
 	memset(&socketAddr, 0, sizeof(socketAddr));
 	memset(&socketAddrLen, 0, sizeof(socketAddrLen));
 
 	clientSocketFd = ::accept(m_socketFd, (struct sockaddr*) &socketAddr, &socketAddrLen);
 	if (-1 == clientSocketFd) {
-		g_critical("%s: %d Failed to accept inbound connection: %s",
+		g_warning("%s: %d Failed to accept inbound connection: %s",
 				   __PRETTY_FUNCTION__, __LINE__, strerror(errno));
 		return;
 	}
 
 	WebosSurfaceManagerRemoteClient *client = m_remoteClientFactory->create(this, clientSocketFd);
-	connect(client, SIGNAL(disconnected()), this, SLOT(onClientDisconnected()));
 }

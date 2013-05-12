@@ -16,9 +16,6 @@
 *
 * LICENSE@@@ */
 
-#include <QDebug>
-#include <QFile>
-
 #include <glib.h>
 
 #include <stdlib.h>
@@ -40,17 +37,25 @@ struct compositor_ctrl_hdr {
 };
 
 WebosSurfaceManagerRemoteClient::WebosSurfaceManagerRemoteClient(WebosSurfaceManager *parent, int socketFd)
-	: QObject(parent),
-	  m_parent(parent),
-	  m_socketFd(socketFd)
+	: m_parent(parent),
+	  m_socketFd(socketFd),
+	  m_channel(0),
+	  m_socketWatch(0)
 {
-	m_socketNotifier = new QSocketNotifier(m_socketFd, QSocketNotifier::Read, this);
-	connect(m_socketNotifier, SIGNAL(activated(int)), this, SLOT(onIncomingData()));
+	m_channel =  g_io_channel_unix_new(m_socketFd);
+	m_socketWatch = g_io_add_watch_full(m_channel, G_PRIORITY_DEFAULT, G_IO_IN,
+										onIncomingDataCb, this, NULL);
 }
 
 WebosSurfaceManagerRemoteClient::~WebosSurfaceManagerRemoteClient()
 {
-	m_socketNotifier->deleteLater();
+}
+
+gboolean WebosSurfaceManagerRemoteClient::onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data)
+{
+	WebosSurfaceManagerRemoteClient *client = reinterpret_cast<WebosSurfaceManagerRemoteClient*>(user_data);
+	client->onIncomingData();
+	return TRUE;
 }
 
 void WebosSurfaceManagerRemoteClient::onIncomingData()
@@ -62,9 +67,9 @@ void WebosSurfaceManagerRemoteClient::onIncomingData()
 
 	ret = read(m_socketFd, &hdr, sizeof(struct compositor_ctrl_hdr));
 	if (ret <= 0) {
-		qDebug() << __PRETTY_FUNCTION__ << "Client closed connection; removing ...";
+		g_message("%s: Client closed connection; removing ...", __PRETTY_FUNCTION__);
 		close(m_socketFd);
-		Q_EMIT disconnected();
+		m_parent->onClientDisconnected(this);
 		return;
 	}
 
