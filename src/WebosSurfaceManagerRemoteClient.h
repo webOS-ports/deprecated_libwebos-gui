@@ -19,6 +19,8 @@
 #ifndef HYBRISCOMPOSITORREMOTECLIENT_H_
 #define HYBRISCOMPOSITORREMOTECLIENT_H_
 
+#include <glib.h>
+
 #include "OffscreenNativeWindow.h"
 
 class WebosSurfaceManager;
