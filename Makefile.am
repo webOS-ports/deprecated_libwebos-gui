@@ -3,6 +3,7 @@ NULL =
 lib_LTLIBRARIES = libwebos-gui.la
 
 libwebos_gui_la_SOURCES = \
+	src/util/fdpass.c \
 	src/OffscreenNativeWindowBuffer.cpp \
 	src/OffscreenNativeWindow.cpp \
 	src/WebosSurfaceManagerClient.cpp \
