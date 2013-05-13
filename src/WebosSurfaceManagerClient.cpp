@@ -47,7 +47,7 @@ gboolean WebosSurfaceManagerClient::initCb(gpointer user_data)
 {
     WebosSurfaceManagerClient *client = reinterpret_cast<WebosSurfaceManagerClient*>(user_data);
     client->init();
-    return TRUE;
+    return FALSE;
 }
 
 void WebosSurfaceManagerClient::init()
