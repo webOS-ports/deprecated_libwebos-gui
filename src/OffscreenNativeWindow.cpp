@@ -41,6 +41,8 @@ OffscreenNativeWindow::OffscreenNativeWindow(unsigned int aWidth, unsigned int a
 
 	for(unsigned int i = 0; i < m_buffercount; i++)
 		m_buffers[i] = 0;
+
+	refcount = 1;
 }
 
 OffscreenNativeWindow::~OffscreenNativeWindow()
@@ -77,6 +79,7 @@ OffscreenNativeWindowBuffer* OffscreenNativeWindow::allocateBuffer()
 	OffscreenNativeWindowBuffer *buffer = 0;
 
 	buffer = new OffscreenNativeWindowBuffer(width(), height(), m_format, m_usage);
+	buffer->incStrong(0);
 
 	int usage = buffer->usage;
 	usage |= GRALLOC_USAGE_HW_TEXTURE;
@@ -110,8 +113,14 @@ int OffscreenNativeWindow::dequeueBuffer(BaseNativeWindowBuffer **buffer, int *f
 		waitForBuffer(selectedBuffer);
 
 		if (selectedBuffer->width != m_width || selectedBuffer->height != m_height) {
-			TRACE("%s buffer and window size doesn't match: resizing buffer ...\n", __PRETTY_FUNCTION__);
-			resizeBuffer(m_tailbuffer, selectedBuffer, m_width, m_height);
+			TRACE("%s buffer and window size doesn't match: recreating buffer ...\n", __PRETTY_FUNCTION__);
+
+			// Let the current buffer be cleared up by it's own
+			selectedBuffer->decStrong(0);
+
+			m_buffers[m_tailbuffer] = allocateBuffer();
+			m_buffers[m_tailbuffer]->setIndex(m_tailbuffer);
+			selectedBuffer = m_buffers[m_tailbuffer];
 		}
 	}
 
@@ -139,7 +148,7 @@ int OffscreenNativeWindow::queueBuffer(BaseNativeWindowBuffer* buffer, int fence
 
 	OffscreenNativeWindowBuffer* buf = static_cast<OffscreenNativeWindowBuffer*>(buffer);
 
-	buf->common.incRef(&buf->common);
+	buf->incStrong(0);
 
 	m_frontbuffer++;
 	if (m_frontbuffer == m_buffercount)
@@ -232,35 +241,6 @@ void OffscreenNativeWindow::resize(unsigned int width, unsigned int height)
 	m_defaultWidth = width;
 	m_height = height;
 	m_defaultHeight = height;
-
-	for (int n = 0; n < m_buffercount; n++) {
-		OffscreenNativeWindowBuffer *buffer = m_buffers[n];
-
-		if (!buffer) {
-			TRACE("%s buffer %i isn't used so we ignore it\n", __PRETTY_FUNCTION__, n);
-			continue;
-		}
-
-		resizeBuffer(n, buffer, width, height);
-	}
-}
-
-void OffscreenNativeWindow::resizeBuffer(int id, OffscreenNativeWindowBuffer *buffer, unsigned int width,
-										 unsigned int height)
-{
-	if (buffer->handle) {
-		TRACE("%s freeing buffer %i ...\n", __PRETTY_FUNCTION__, id);
-		m_alloc->free(m_alloc, buffer->handle);
-		buffer->handle = 0;
-	}
-
-	int usage = buffer->usage;
-	usage |= GRALLOC_USAGE_HW_TEXTURE;
-	int err = m_alloc->alloc(m_alloc, this->width(), this->height(), m_format,
-				usage, &buffer->handle, &buffer->stride);
-
-	buffer->width = width;
-	buffer->height = height;
 }
 
 unsigned int OffscreenNativeWindow::bufferCount()

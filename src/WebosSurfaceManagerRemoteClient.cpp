@@ -76,6 +76,10 @@ void WebosSurfaceManagerRemoteClient::onIncomingData()
 	OffscreenNativeWindowBuffer *buffer = new OffscreenNativeWindowBuffer();
 	buffer->readFromFd(m_socketFd);
 
+	g_message("Received buffer from remote index = %i", buffer->index());
+
+	buffer->incStrong(0);
+
 	hybris_register_buffer_handle(buffer->getHandle());
 
 	handleIncomingBuffer(hdr.windowId, buffer);

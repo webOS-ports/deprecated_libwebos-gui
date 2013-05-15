@@ -76,8 +76,6 @@ private:
 	const gralloc_module_t* m_gralloc;
 private:
 	OffscreenNativeWindowBuffer* allocateBuffer();
-	void resizeBuffer(int id, OffscreenNativeWindowBuffer *buffer, unsigned int width,
-				unsigned int height);
 
 };
 
