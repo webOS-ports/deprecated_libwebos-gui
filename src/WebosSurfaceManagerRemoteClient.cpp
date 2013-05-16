@@ -80,8 +80,6 @@ void WebosSurfaceManagerRemoteClient::onIncomingData()
 
 	buffer->incStrong(0);
 
-	hybris_register_buffer_handle(buffer->getHandle());
-
 	handleIncomingBuffer(hdr.windowId, buffer);
 }
 

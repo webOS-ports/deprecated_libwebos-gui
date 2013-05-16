@@ -10,11 +10,13 @@ class OffscreenNativeWindowBuffer : public BaseNativeWindowBuffer
 	friend class OffscreenNativeWindow;
 
 protected:
-	OffscreenNativeWindowBuffer(unsigned int width, unsigned int height,
-								unsigned int format, unsigned int usage);
+	OffscreenNativeWindowBuffer(unsigned int width, unsigned int height, unsigned int stride,
+								unsigned int format, unsigned int usage,
+								buffer_handle_t handle);
 
 public:
 	OffscreenNativeWindowBuffer();
+	~OffscreenNativeWindowBuffer();
 
 	int writeToFd(int fd);
 	int readFromFd(int fd);

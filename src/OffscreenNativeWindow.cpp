@@ -77,15 +77,15 @@ int OffscreenNativeWindow::setSwapInterval(int interval)
 OffscreenNativeWindowBuffer* OffscreenNativeWindow::allocateBuffer()
 {
 	OffscreenNativeWindowBuffer *buffer = 0;
-
-	buffer = new OffscreenNativeWindowBuffer(width(), height(), m_format, m_usage);
-	buffer->incStrong(0);
-
-	int usage = buffer->usage;
-	usage |= GRALLOC_USAGE_HW_TEXTURE;
+	int usage = m_usage | GRALLOC_USAGE_HW_TEXTURE;
+	buffer_handle_t handle;
+	unsigned int stride = 0;
 
 	int err = m_alloc->alloc(m_alloc, width(), height(), m_format,
-				usage, &buffer->handle, &buffer->stride);
+				usage, &handle, &stride);
+
+	buffer = new OffscreenNativeWindowBuffer(width(), height(), stride, m_format, m_usage, handle);
+	buffer->incStrong(0);
 
 	return buffer;
 }

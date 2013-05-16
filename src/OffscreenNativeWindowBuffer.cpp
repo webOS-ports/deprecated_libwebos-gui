@@ -23,6 +23,8 @@
 #include <errno.h>
 #include <assert.h>
 
+#include <EGL/eglhybris.h>
+
 #include "util/fdpass.h"
 #include "OffscreenNativeWindow.h"
 
@@ -43,14 +45,22 @@ OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer()
 }
 
 OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer(unsigned int width, unsigned int height,
-							 unsigned int format, unsigned int usage)
+							unsigned int stride, unsigned int format, unsigned int usage,
+							buffer_handle_t handle)
 	: _index(0)
 {
 	ANativeWindowBuffer::width = width;
 	ANativeWindowBuffer::height = height;
+	ANativeWindowBuffer::stride = stride;
 	ANativeWindowBuffer::format = format;
 	ANativeWindowBuffer::usage = usage;
-};
+	ANativeWindowBuffer::handle = handle;
+}
+
+OffscreenNativeWindowBuffer::~OffscreenNativeWindowBuffer()
+{
+	hybris_unregister_buffer_handle(ANativeWindowBuffer::handle);
+}
 
 int OffscreenNativeWindowBuffer::writeToFd(int fd)
 {
@@ -130,6 +140,8 @@ int OffscreenNativeWindowBuffer::readFromFd(int fd)
 		if (ret < 0)
 			return -EIO;
 	}
+
+	hybris_register_buffer_handle(this->handle);
 
 	printf("Successfully received buffer from remote\n");
 
