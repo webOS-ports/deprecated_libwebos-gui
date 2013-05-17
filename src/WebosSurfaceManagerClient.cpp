@@ -32,23 +32,32 @@ WebosSurfaceManagerClient::WebosSurfaceManagerClient()
       m_channel(0),
       m_socketWatch(0)
 {
-    g_idle_add(WebosSurfaceManagerClient::initCb, this);
+    m_thread = g_thread_create(WebosSurfaceManagerClient::startupCallback, this, true, NULL);
 }
 
 WebosSurfaceManagerClient::~WebosSurfaceManagerClient()
 {
 }
 
-gboolean WebosSurfaceManagerClient::initCb(gpointer user_data)
+gboolean WebosSurfaceManagerClient::startupCallback(gpointer user_data)
 {
     WebosSurfaceManagerClient *client = reinterpret_cast<WebosSurfaceManagerClient*>(user_data);
-    client->init();
+    client->startup();
     return FALSE;
 }
 
-void WebosSurfaceManagerClient::init()
+void WebosSurfaceManagerClient::startup()
 {
     struct sockaddr_un socketAddr;
+    GMainContext *context;
+
+    g_message("%s: starting thread to handle client communication ...", __PRETTY_FUNCTION__);
+
+    // create new context and mainloop for our thread
+    context = g_main_context_new();
+    g_main_context_push_thread_default(context);
+
+    m_mainLoop = g_main_loop_new(context, FALSE);
 
     m_socketFd = ::socket(PF_LOCAL, SOCK_STREAM, 0);
     if (m_socketFd < 0) {
@@ -72,6 +81,8 @@ void WebosSurfaceManagerClient::init()
     m_channel =  g_io_channel_unix_new(m_socketFd);
     m_socketWatch = g_io_add_watch_full(m_channel, G_PRIORITY_DEFAULT, G_IO_IN,
                                         onIncomingDataCb, this, NULL);
+
+    g_main_loop_run(m_mainLoop);
 }
 
 gboolean WebosSurfaceManagerClient::onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data)

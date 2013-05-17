@@ -35,15 +35,17 @@ public:
     void onIncomingData();
 
     static gboolean onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data);
-    static gboolean initCb(gpointer user_data);
 
 private:
     int m_socketFd;
     gchar *m_socketPath;
     GIOChannel *m_channel;
     guint m_socketWatch;
+    GThread *m_thread;
+    GMainLoop *m_mainLoop;
 
-    void init();
+    static gboolean startupCallback(gpointer user_data);
+    void startup();
 };
 
 #endif /* HYBRISCOMPOSITORCLIENT_H */
