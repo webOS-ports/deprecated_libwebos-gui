@@ -148,8 +148,6 @@ int OffscreenNativeWindow::queueBuffer(BaseNativeWindowBuffer* buffer, int fence
 
 	OffscreenNativeWindowBuffer* buf = static_cast<OffscreenNativeWindowBuffer*>(buffer);
 
-	buf->incStrong(0);
-
 	m_frontbuffer++;
 	if (m_frontbuffer == m_buffercount)
 		m_frontbuffer = 0;
