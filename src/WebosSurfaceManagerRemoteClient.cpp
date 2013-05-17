@@ -88,3 +88,17 @@ void WebosSurfaceManagerRemoteClient::onIncomingData()
 void WebosSurfaceManagerRemoteClient::handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer)
 {
 }
+
+void WebosSurfaceManagerRemoteClient::restoreBuffer(int windowId, OffscreenNativeWindowBuffer *buffer)
+{
+	WebosMessageHeader hdr;
+	int ret;
+
+	memset(&hdr, 0, sizeof(WebosMessageHeader));
+	hdr.windowId = windowId;
+	hdr.command = WEBOS_MESSAGE_TYPE_RESTORE_BUFFER;
+
+	ret = write(m_socketFd, &hdr, sizeof(WebosMessageHeader));
+
+	buffer->writeToFd(m_socketFd);
+}
