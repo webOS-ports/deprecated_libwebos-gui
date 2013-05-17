@@ -58,6 +58,7 @@ void WebosSurfaceManagerRemoteClient::onIncomingData()
 {
 	int ret;
 	WebosMessageHeader hdr;
+	OffscreenNativeWindowBuffer *buffer;
 
 	memset(&hdr, 0, sizeof(WebosMessageHeader));
 
@@ -69,14 +70,19 @@ void WebosSurfaceManagerRemoteClient::onIncomingData()
 		return;
 	}
 
-	OffscreenNativeWindowBuffer *buffer = new OffscreenNativeWindowBuffer();
-	buffer->readFromFd(m_socketFd);
+	switch (hdr.command) {
+	case WEBOS_MESSAGE_TYPE_POST_BUFFER:
+		buffer = new OffscreenNativeWindowBuffer();
+		buffer->incStrong(0);
 
-	g_message("Received buffer from remote index = %i", buffer->index());
-
-	buffer->incStrong(0);
-
-	handleIncomingBuffer(hdr.windowId, buffer);
+		buffer->readFromFd(m_socketFd);
+		handleIncomingBuffer(hdr.windowId, buffer);
+		break;
+	default:
+		g_warning("%s: unhandled message type %i for window %i",
+			__PRETTY_FUNCTION__, hdr.command, hdr.windowId);
+		break;
+	}
 }
 
 void WebosSurfaceManagerRemoteClient::handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer)
