@@ -41,13 +41,21 @@ struct buffer_info_header {
 };
 
 OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer()
-	: _index(0)
+	: _index(0),
+	  mOwner(ownNone)
 {
+	ANativeWindowBuffer::width = 0;
+	ANativeWindowBuffer::height = 0;
+	ANativeWindowBuffer::stride = 0;
+	ANativeWindowBuffer::format = 0;
+	ANativeWindowBuffer::usage = 0;
+	ANativeWindowBuffer::handle = NULL;
 }
 
 OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer(unsigned int width, unsigned int height,
 							unsigned int format, unsigned int usage)
-	: _index(0)
+	: _index(0),
+	  mOwner(ownData)
 {
 	ANativeWindowBuffer::width = width;
 	ANativeWindowBuffer::height = height;
@@ -61,6 +69,18 @@ OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer(unsigned int width, uns
 OffscreenNativeWindowBuffer::~OffscreenNativeWindowBuffer()
 {
 	hybris_unregister_buffer_handle(ANativeWindowBuffer::handle);
+
+	if (handle) {
+		if (mOwner == ownHandle) {
+			hybris_unregister_buffer_handle(handle);
+			native_handle_close(handle);
+			native_handle_delete(const_cast<native_handle*>(handle));
+		}
+		else if (mOwner == ownData) {
+			BufferAllocator& allocator = BufferAllocator::get();
+			allocator.free(handle);
+		}
+	}
 }
 
 int OffscreenNativeWindowBuffer::writeToFd(int fd)
@@ -143,6 +163,8 @@ int OffscreenNativeWindowBuffer::readFromFd(int fd)
 	}
 
 	hybris_register_buffer_handle(this->handle);
+
+	mOwner = ownHandle;
 
 	printf("Successfully received buffer from remote\n");
 

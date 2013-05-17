@@ -5,6 +5,8 @@
 #include <android/hardware/gralloc.h>
 #include <hybris/eglplatformcommon/nativewindowbase.h>
 
+
+
 class OffscreenNativeWindowBuffer : public BaseNativeWindowBuffer
 {
 	friend class OffscreenNativeWindow;
@@ -26,7 +28,15 @@ public:
 	void setIndex(unsigned int index);
 
 private:
+	enum {
+		ownNone = 0,
+		ownHandle = 1,
+		ownData = 2,
+	};
+
+private:
 	unsigned int _index;
+	uint8_t mOwner;
 };
 
 class OffscreenNativeWindow : public BaseNativeWindow
