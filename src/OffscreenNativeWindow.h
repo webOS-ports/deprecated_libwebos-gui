@@ -10,9 +10,8 @@ class OffscreenNativeWindowBuffer : public BaseNativeWindowBuffer
 	friend class OffscreenNativeWindow;
 
 protected:
-	OffscreenNativeWindowBuffer(unsigned int width, unsigned int height, unsigned int stride,
-								unsigned int format, unsigned int usage,
-								buffer_handle_t handle);
+	OffscreenNativeWindowBuffer(unsigned int width, unsigned int height,
+								unsigned int format, unsigned int usage);
 
 public:
 	OffscreenNativeWindowBuffer();
@@ -74,8 +73,6 @@ private:
 	unsigned int m_usage;
 	unsigned int m_buffercount;
 	OffscreenNativeWindowBuffer** m_buffers;
-	alloc_device_t* m_alloc;
-	const gralloc_module_t* m_gralloc;
 private:
 	OffscreenNativeWindowBuffer* allocateBuffer();
 

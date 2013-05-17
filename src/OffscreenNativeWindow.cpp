@@ -33,10 +33,6 @@ OffscreenNativeWindow::OffscreenNativeWindow(unsigned int aWidth, unsigned int a
 	, m_frontbuffer(m_buffercount - 1)
 	, m_tailbuffer(0)
 {
-	hw_get_module(GRALLOC_HARDWARE_MODULE_ID, (const hw_module_t**)&m_gralloc);
-	int err = gralloc_open((hw_module_t*)m_gralloc, &m_alloc);
-	TRACE("got alloc %p err:%s\n", m_alloc, strerror(-err));
-
 	m_buffers = new OffscreenNativeWindowBuffer*[m_buffercount];
 
 	for(unsigned int i = 0; i < m_buffercount; i++)
@@ -76,15 +72,10 @@ int OffscreenNativeWindow::setSwapInterval(int interval)
 
 OffscreenNativeWindowBuffer* OffscreenNativeWindow::allocateBuffer()
 {
-	OffscreenNativeWindowBuffer *buffer = 0;
 	int usage = m_usage | GRALLOC_USAGE_HW_TEXTURE;
-	buffer_handle_t handle;
-	unsigned int stride = 0;
 
-	int err = m_alloc->alloc(m_alloc, width(), height(), m_format,
-				usage, &handle, &stride);
-
-	buffer = new OffscreenNativeWindowBuffer(width(), height(), stride, m_format, m_usage, handle);
+	OffscreenNativeWindowBuffer *buffer = new OffscreenNativeWindowBuffer(width(), height(),
+														m_format, m_usage);
 	buffer->incStrong(0);
 
 	return buffer;

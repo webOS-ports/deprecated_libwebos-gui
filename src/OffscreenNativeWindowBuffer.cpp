@@ -27,6 +27,7 @@
 
 #include "util/fdpass.h"
 #include "OffscreenNativeWindow.h"
+#include "BufferAllocator.h"
 
 struct buffer_info_header {
 	uint32_t index;
@@ -45,16 +46,16 @@ OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer()
 }
 
 OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer(unsigned int width, unsigned int height,
-							unsigned int stride, unsigned int format, unsigned int usage,
-							buffer_handle_t handle)
+							unsigned int format, unsigned int usage)
 	: _index(0)
 {
 	ANativeWindowBuffer::width = width;
 	ANativeWindowBuffer::height = height;
-	ANativeWindowBuffer::stride = stride;
 	ANativeWindowBuffer::format = format;
 	ANativeWindowBuffer::usage = usage;
-	ANativeWindowBuffer::handle = handle;
+
+	BufferAllocator& allocator = BufferAllocator::get();
+	allocator.alloc(width, height, format, usage, &handle, &stride);
 }
 
 OffscreenNativeWindowBuffer::~OffscreenNativeWindowBuffer()

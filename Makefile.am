@@ -8,7 +8,8 @@ libwebos_gui_la_SOURCES = \
 	src/OffscreenNativeWindow.cpp \
 	src/WebosSurfaceManagerClient.cpp \
 	src/WebosSurfaceManager.cpp \
-	src/WebosSurfaceManagerRemoteClient.cpp
+	src/WebosSurfaceManagerRemoteClient.cpp \
+	src/BufferAllocator.cpp
 libwebos_gui_la_CPPFLAGS = $(GLIB_CFLAGS)
 libwebos_gui_la_LIBADD = $(GLIB_LIBS) -lhybris-eglplatformcommon
 
