@@ -28,13 +28,9 @@
 
 #include <EGL/eglhybris.h>
 
+#include "WebosMessages.h"
 #include "WebosSurfaceManager.h"
 #include "WebosSurfaceManagerRemoteClient.h"
-
-struct compositor_ctrl_hdr {
-    uint32_t windowId;
-    uint32_t command;
-};
 
 WebosSurfaceManagerRemoteClient::WebosSurfaceManagerRemoteClient(WebosSurfaceManager *parent, int socketFd)
 	: m_parent(parent),
@@ -61,11 +57,11 @@ gboolean WebosSurfaceManagerRemoteClient::onIncomingDataCb(GIOChannel *channel, 
 void WebosSurfaceManagerRemoteClient::onIncomingData()
 {
 	int ret;
-	struct compositor_ctrl_hdr hdr;
+	WebosMessageHeader hdr;
 
-	memset(&hdr, 0, sizeof(struct compositor_ctrl_hdr));
+	memset(&hdr, 0, sizeof(WebosMessageHeader));
 
-	ret = read(m_socketFd, &hdr, sizeof(struct compositor_ctrl_hdr));
+	ret = read(m_socketFd, &hdr, sizeof(WebosMessageHeader));
 	if (ret <= 0) {
 		g_message("%s: Client closed connection; removing ...", __PRETTY_FUNCTION__);
 		close(m_socketFd);
@@ -86,4 +82,3 @@ void WebosSurfaceManagerRemoteClient::onIncomingData()
 void WebosSurfaceManagerRemoteClient::handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer)
 {
 }
-

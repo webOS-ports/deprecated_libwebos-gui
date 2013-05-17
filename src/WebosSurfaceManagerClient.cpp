@@ -23,12 +23,8 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include "WebosMessages.h"
 #include "WebosSurfaceManagerClient.h"
-
-struct compositor_ctrl_hdr {
-    uint32_t windowId;
-    uint32_t command;
-};
 
 WebosSurfaceManagerClient::WebosSurfaceManagerClient()
     : m_socketFd(-1),
@@ -76,7 +72,6 @@ void WebosSurfaceManagerClient::init()
     m_channel =  g_io_channel_unix_new(m_socketFd);
     m_socketWatch = g_io_add_watch_full(m_channel, G_PRIORITY_DEFAULT, G_IO_IN,
                                         onIncomingDataCb, this, NULL);
-
 }
 
 gboolean WebosSurfaceManagerClient::onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data)
@@ -100,14 +95,14 @@ void WebosSurfaceManagerClient::onIncomingData()
 
 void WebosSurfaceManagerClient::postBuffer(int winId, OffscreenNativeWindowBuffer *buffer)
 {
-    struct compositor_ctrl_hdr hdr;
+    WebosMessageHeader hdr;
     int ret;
 
-    memset(&hdr, 0, sizeof(struct compositor_ctrl_hdr));
+    memset(&hdr, 0, sizeof(WebosMessageHeader));
     hdr.windowId = winId;
-    hdr.command = 1; /* default */
+    hdr.command = WEBOS_MESSAGE_TYPE_POST_BUFFER;
 
-    ret = write(m_socketFd, &hdr, sizeof(struct compositor_ctrl_hdr));
+    ret = write(m_socketFd, &hdr, sizeof(WebosMessageHeader));
 
     buffer->writeToFd(m_socketFd);
 }
