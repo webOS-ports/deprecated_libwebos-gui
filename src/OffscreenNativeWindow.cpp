@@ -75,7 +75,7 @@ OffscreenNativeWindowBuffer* OffscreenNativeWindow::allocateBuffer()
 	int usage = m_usage | GRALLOC_USAGE_HW_TEXTURE;
 
 	OffscreenNativeWindowBuffer *buffer = new OffscreenNativeWindowBuffer(width(), height(),
-														m_format, m_usage);
+														m_format, usage);
 	buffer->incStrong(0);
 
 	return buffer;
