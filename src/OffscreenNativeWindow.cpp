@@ -22,6 +22,8 @@
 
 #include "OffscreenNativeWindow.h"
 
+#define TRACE(message, ...)
+
 OffscreenNativeWindow::OffscreenNativeWindow(unsigned int aWidth, unsigned int aHeight, unsigned int aFormat)
 	: m_width(aWidth)
 	, m_height(aHeight)
