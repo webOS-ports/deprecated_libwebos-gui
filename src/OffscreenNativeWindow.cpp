@@ -50,6 +50,11 @@ OffscreenNativeWindow::~OffscreenNativeWindow()
 	g_mutex_clear(&m_bufferMutex);
 }
 
+void OffscreenNativeWindow::identify(unsigned int windowId)
+{
+	m_surfaceClient.identify(windowId);
+}
+
 OffscreenNativeWindowBuffer* OffscreenNativeWindow::allocateBuffer()
 {
 	int usage = m_usage | GRALLOC_USAGE_HW_TEXTURE;
@@ -142,9 +147,7 @@ int OffscreenNativeWindow::queueBuffer(BaseNativeWindowBuffer* buffer, int fence
 	TRACE("%s", __PRETTY_FUNCTION__);
 
 	OffscreenNativeWindowBuffer* buf = static_cast<OffscreenNativeWindowBuffer*>(buffer);
-
-	// XXX where do we get the window id from?
-	m_surfaceClient.postBuffer(platformWindowId(), buf);
+	m_surfaceClient.postBuffer(buf);
 
 	return NO_ERROR;
 }

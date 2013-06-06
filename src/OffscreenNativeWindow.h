@@ -51,12 +51,10 @@ public:
 	OffscreenNativeWindow(unsigned int width, unsigned int height, unsigned int format = 5);
 	~OffscreenNativeWindow();
 
+	void identify(unsigned int windowId);
 	void resize(unsigned int width, unsigned int height);
 
 	virtual void releaseBuffer(unsigned int index);
-
-protected:
-	virtual unsigned int platformWindowId() = 0;
 
 protected:
 	// overloads from BaseNativeWindow

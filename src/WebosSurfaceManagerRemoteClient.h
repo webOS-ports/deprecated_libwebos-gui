@@ -34,10 +34,11 @@ public:
 	void onIncomingData();
 	static gboolean onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data);
 
-	void releaseBuffer(int windowId, OffscreenNativeWindowBuffer *buffer);
+	void releaseBuffer(OffscreenNativeWindowBuffer *buffer);
 
 protected:
-	virtual void handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer);
+	virtual void handleIdentify(unsigned int windowId);
+	virtual void handleIncomingBuffer(OffscreenNativeWindowBuffer *buffer);
 
 private:
 	WebosSurfaceManager *m_parent;

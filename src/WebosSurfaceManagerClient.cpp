@@ -125,19 +125,32 @@ void WebosSurfaceManagerClient::onIncomingData()
 
         break;
     default:
-        g_warning("%s: unhandled message type %i for window %i",
-                  __PRETTY_FUNCTION__, hdr.command, hdr.windowId);
+        g_warning("%s: unhandled message type %i",
+                  __PRETTY_FUNCTION__, hdr.command);
     }
 }
 
-void WebosSurfaceManagerClient::postBuffer(int winId, OffscreenNativeWindowBuffer *buffer)
+void WebosSurfaceManagerClient::identify(unsigned int windowId)
 {
-    g_message("%s: winId=%i index=%i", __PRETTY_FUNCTION__, winId, buffer->index());
+    g_message("%s: windowId=%i", __PRETTY_FUNCTION__, windowId);
+
     WebosMessageHeader hdr;
     int ret;
 
     memset(&hdr, 0, sizeof(WebosMessageHeader));
-    hdr.windowId = winId;
+    hdr.command = WEBOS_MESSAGE_TYPE_IDENTIFY;
+
+    ret = write(m_socketFd, &hdr, sizeof(WebosMessageHeader));
+    ret = write(m_socketFd, &windowId, sizeof(unsigned int));
+}
+
+void WebosSurfaceManagerClient::postBuffer(OffscreenNativeWindowBuffer *buffer)
+{
+    g_message("%s: index=%i", __PRETTY_FUNCTION__, buffer->index());
+    WebosMessageHeader hdr;
+    int ret;
+
+    memset(&hdr, 0, sizeof(WebosMessageHeader));
     hdr.command = WEBOS_MESSAGE_TYPE_POST_BUFFER;
 
     ret = write(m_socketFd, &hdr, sizeof(WebosMessageHeader));

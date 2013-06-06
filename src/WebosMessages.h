@@ -22,12 +22,12 @@
 #include <stdint.h>
 
 enum WebosMessageTypes {
+    WEBOS_MESSAGE_TYPE_IDENTIFY = 0,
     WEBOS_MESSAGE_TYPE_POST_BUFFER = 1,
     WEBOS_MESSAGE_TYPE_RELEASE_BUFFER = 2,
 };
 
 typedef struct {
-    uint32_t windowId;
     uint32_t command;
 } WebosMessageHeader;
 

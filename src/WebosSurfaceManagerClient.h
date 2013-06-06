@@ -37,7 +37,8 @@ public:
     WebosSurfaceManagerClient(IBufferManager *manager);
     ~WebosSurfaceManagerClient();
 
-    void postBuffer(int winId, OffscreenNativeWindowBuffer *buffer);
+    void identify(unsigned int winId);
+    void postBuffer(OffscreenNativeWindowBuffer *buffer);
 
 private:
     int m_socketFd;
