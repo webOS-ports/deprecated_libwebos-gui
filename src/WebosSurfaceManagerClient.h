@@ -22,19 +22,22 @@
 #include <string>
 
 #include <EGL/eglhybris.h>
-#include "OffscreenNativeWindow.h"
+
+class OffscreenNativeWindowBuffer;
+
+class IBufferManager
+{
+public:
+    virtual void releaseBuffer(unsigned int index) = 0;
+};
 
 class WebosSurfaceManagerClient
 {
 public:
-    WebosSurfaceManagerClient();
+    WebosSurfaceManagerClient(IBufferManager *manager);
     ~WebosSurfaceManagerClient();
 
     void postBuffer(int winId, OffscreenNativeWindowBuffer *buffer);
-
-    void onIncomingData();
-
-    static gboolean onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data);
 
 private:
     int m_socketFd;
@@ -43,8 +46,13 @@ private:
     guint m_socketWatch;
     GThread *m_thread;
     GMainLoop *m_mainLoop;
+    IBufferManager *m_bufferManager;
 
-    static gboolean startupCallback(gpointer user_data);
+private:
+    static gpointer startupCallback(gpointer user_data);
+    static gboolean onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data);
+
+    void onIncomingData();
     void startup();
 };
 

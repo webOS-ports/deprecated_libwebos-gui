@@ -1,11 +1,13 @@
 #ifndef OFFSCREEN_WINDOW_H
 #define OFFSCREEN_WINDOW_H
 
+#include <list>
 #include <linux/fb.h>
 #include <android/hardware/gralloc.h>
 #include <hybris/eglplatformcommon/nativewindowbase.h>
+#include <glib.h>
 
-
+#include "WebosSurfaceManagerClient.h"
 
 class OffscreenNativeWindowBuffer : public BaseNativeWindowBuffer
 {
@@ -24,8 +26,11 @@ public:
 
 	buffer_handle_t getHandle();
 
-	unsigned int index();
-	void setIndex(unsigned int index);
+	unsigned int index() const { return m_index; }
+	void setIndex(unsigned int index) { m_index = index; }
+
+	bool busy() const { return m_busy; }
+	bool setBusy(bool busy) { m_busy = busy; }
 
 private:
 	enum {
@@ -35,22 +40,23 @@ private:
 	};
 
 private:
-	unsigned int _index;
-	uint8_t mOwner;
+	unsigned int m_index;
+	uint8_t m_owner;
+	bool m_busy;
 };
 
-class OffscreenNativeWindow : public BaseNativeWindow
+class OffscreenNativeWindow : public BaseNativeWindow, public IBufferManager
 {
 public:
 	OffscreenNativeWindow(unsigned int width, unsigned int height, unsigned int format = 5);
 	~OffscreenNativeWindow();
 
-	virtual void postBuffer(OffscreenNativeWindowBuffer *buffer) { }
-	virtual void waitForBuffer(OffscreenNativeWindowBuffer *buffer) { }
-
 	void resize(unsigned int width, unsigned int height);
 
-	unsigned int bufferCount();
+	virtual void releaseBuffer(unsigned int index);
+
+protected:
+	virtual unsigned int platformWindowId() = 0;
 
 protected:
 	// overloads from BaseNativeWindow
@@ -73,16 +79,16 @@ protected:
 	virtual int setBuffersFormat(int format);
 	virtual int setBuffersDimensions(int width, int height);
 private:
-	unsigned int m_frontbuffer;
-	unsigned int m_tailbuffer;
 	unsigned int m_width;
 	unsigned int m_height;
 	unsigned int m_format;
 	unsigned int m_defaultWidth;
 	unsigned int m_defaultHeight;
 	unsigned int m_usage;
-	unsigned int m_buffercount;
-	OffscreenNativeWindowBuffer** m_buffers;
+	std::list<OffscreenNativeWindowBuffer*> m_buffers;
+	WebosSurfaceManagerClient m_surfaceClient;
+	GMutex m_bufferMutex;
+	GCond m_nextBufferCondition;
 private:
 	OffscreenNativeWindowBuffer* allocateBuffer();
 

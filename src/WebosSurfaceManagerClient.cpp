@@ -25,21 +25,23 @@
 
 #include "WebosMessages.h"
 #include "WebosSurfaceManagerClient.h"
+#include "OffscreenNativeWindow.h"
 
-WebosSurfaceManagerClient::WebosSurfaceManagerClient()
+WebosSurfaceManagerClient::WebosSurfaceManagerClient(IBufferManager *manager)
     : m_socketFd(-1),
-      m_socketPath("/tmp/surface_manager"),
       m_channel(0),
-      m_socketWatch(0)
+      m_socketWatch(0),
+      m_bufferManager(manager)
 {
-    m_thread = g_thread_create(WebosSurfaceManagerClient::startupCallback, this, true, NULL);
+    m_socketPath = g_strdup("/tmp/surface_manager");
+    m_thread = g_thread_new("surface_client", WebosSurfaceManagerClient::startupCallback, this);
 }
 
 WebosSurfaceManagerClient::~WebosSurfaceManagerClient()
 {
 }
 
-gboolean WebosSurfaceManagerClient::startupCallback(gpointer user_data)
+gpointer WebosSurfaceManagerClient::startupCallback(gpointer user_data)
 {
     WebosSurfaceManagerClient *client = reinterpret_cast<WebosSurfaceManagerClient*>(user_data);
     client->startup();
@@ -63,7 +65,7 @@ void WebosSurfaceManagerClient::startup()
     if (m_socketFd < 0) {
         g_critical("%s: %d Failed to create socket: %s",
                    __PRETTY_FUNCTION__, __LINE__, strerror(errno));
-        return false;
+        return;
     }
 
     memset(&socketAddr, 0, sizeof(socketAddr));
@@ -94,18 +96,43 @@ gboolean WebosSurfaceManagerClient::onIncomingDataCb(GIOChannel *channel, GIOCon
 
 void WebosSurfaceManagerClient::onIncomingData()
 {
-    char buffer;
     int ret;
+    unsigned int bufferIndex = 0;
+    WebosMessageHeader hdr;
+    OffscreenNativeWindowBuffer *buffer;
 
-    ret = read(m_socketFd, &buffer, 1);
+    ret = read(m_socketFd, &hdr, sizeof(WebosMessageHeader));
     if (ret <= 0) {
+        g_message("%s: Server closed connection. Shutting down ...", __PRETTY_FUNCTION__);
         close(m_socketFd);
-        m_socketFd = -1;
+        return;
+    }
+
+    switch (hdr.command) {
+    case WEBOS_MESSAGE_TYPE_RELEASE_BUFFER:
+        ret = read(m_socketFd, &bufferIndex, sizeof(unsigned int));
+        if (ret != sizeof(unsigned int)) {
+            g_warning("%s: Failed to read buffer index", __PRETTY_FUNCTION__);
+            return;
+        }
+
+        if (bufferIndex == 0) {
+            g_warning("%s: Skipping invalid buffer index %i", __PRETTY_FUNCTION__, bufferIndex);
+            return;
+        }
+
+        m_bufferManager->releaseBuffer(bufferIndex);
+
+        break;
+    default:
+        g_warning("%s: unhandled message type %i for window %i",
+                  __PRETTY_FUNCTION__, hdr.command, hdr.windowId);
     }
 }
 
 void WebosSurfaceManagerClient::postBuffer(int winId, OffscreenNativeWindowBuffer *buffer)
 {
+    g_message("%s: winId=%i index=%i", __PRETTY_FUNCTION__, winId, buffer->index());
     WebosMessageHeader hdr;
     int ret;
 

@@ -22,7 +22,7 @@
 
 #include "OffscreenNativeWindow.h"
 
-#define TRACE(message, ...)
+#define TRACE(message, ...) g_message(message, ##__VA_ARGS__)
 
 OffscreenNativeWindow::OffscreenNativeWindow(unsigned int aWidth, unsigned int aHeight, unsigned int aFormat)
 	: m_width(aWidth)
@@ -31,210 +31,195 @@ OffscreenNativeWindow::OffscreenNativeWindow(unsigned int aWidth, unsigned int a
 	, m_defaultHeight(aHeight)
 	, m_format(aFormat)
 	, m_usage(GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_TEXTURE)
-	, m_buffercount(3)
-	, m_frontbuffer(m_buffercount - 1)
-	, m_tailbuffer(0)
+	, m_surfaceClient(this)
 {
-	m_buffers = new OffscreenNativeWindowBuffer*[m_buffercount];
-
-	for(unsigned int i = 0; i < m_buffercount; i++)
-		m_buffers[i] = 0;
-
+	// set refcount manually here as we're not caring about references of the native
+	// window yet
 	refcount = 1;
+
+	setBufferCount(3);
+
+	g_mutex_init(&m_bufferMutex);
+	g_cond_init(&m_nextBufferCondition);
 }
 
 OffscreenNativeWindow::~OffscreenNativeWindow()
 {
-	TRACE("%s\n", __PRETTY_FUNCTION__);
-}
-
-// overloads from BaseNativeWindow
-int OffscreenNativeWindow::setBufferCount(int cnt)
-{
-	TRACE("%s\n",__PRETTY_FUNCTION__);
-	if( m_buffercount < cnt ) // only increase it
-	{
-		OffscreenNativeWindowBuffer** new_buffers = new OffscreenNativeWindowBuffer*[cnt];
-
-		// transfer the pointers
-		for(unsigned int i = 0; i < cnt; i++)
-			new_buffers[i] = i < m_buffercount ? m_buffers[i] : 0;
-
-		delete[] m_buffers; m_buffers = new_buffers;
-		m_buffercount = cnt;
-	}
-	return NO_ERROR;
-}
-
-int OffscreenNativeWindow::setSwapInterval(int interval)
-{
-	TRACE("%s\n", __PRETTY_FUNCTION__);
-	return 0;
+	// XXX cleanup all used buffers
+	g_cond_clear(&m_nextBufferCondition);
+	g_mutex_clear(&m_bufferMutex);
 }
 
 OffscreenNativeWindowBuffer* OffscreenNativeWindow::allocateBuffer()
 {
 	int usage = m_usage | GRALLOC_USAGE_HW_TEXTURE;
+	static unsigned int bufferIndex = 0;
 
 	OffscreenNativeWindowBuffer *buffer = new OffscreenNativeWindowBuffer(width(), height(),
 														m_format, usage);
 	buffer->incStrong(0);
+	buffer->setIndex(++bufferIndex);
 
 	return buffer;
 }
 
-int OffscreenNativeWindow::dequeueBuffer(BaseNativeWindowBuffer **buffer, int *fenceFd)
+int OffscreenNativeWindow::setBufferCount(int count)
 {
-	TRACE("%s\n",__PRETTY_FUNCTION__);
+	TRACE("%s: count=%i", __PRETTY_FUNCTION__, count);
 
-	OffscreenNativeWindowBuffer *selectedBuffer = NULL;
-
-	if(m_buffers[m_tailbuffer] == 0) {
-		m_buffers[m_tailbuffer] = allocateBuffer();
-		m_buffers[m_tailbuffer]->setIndex(m_tailbuffer);
-
-		TRACE("buffer %i is at %p (native %p) handle=%i stride=%i\n",
-				m_tailbuffer, m_buffers[m_tailbuffer], (ANativeWindowBuffer*) m_buffers[m_tailbuffer],
-				m_buffers[m_tailbuffer]->handle, m_buffers[m_tailbuffer]->stride);
-
-		selectedBuffer = m_buffers[m_tailbuffer];
-	}
-	else
-	{
-		selectedBuffer = m_buffers[m_tailbuffer];
-
-		waitForBuffer(selectedBuffer);
-
-		if (selectedBuffer->width != m_width || selectedBuffer->height != m_height) {
-			TRACE("%s buffer and window size doesn't match: recreating buffer ...\n", __PRETTY_FUNCTION__);
-
-			// Let the current buffer be cleared up by it's own
-			selectedBuffer->decStrong(0);
-
-			m_buffers[m_tailbuffer] = allocateBuffer();
-			m_buffers[m_tailbuffer]->setIndex(m_tailbuffer);
-			selectedBuffer = m_buffers[m_tailbuffer];
+	if (m_buffers.size() < count) {
+		for (int n = 0; n < m_buffers.size() - count; n++) {
+			OffscreenNativeWindowBuffer *buffer = allocateBuffer();
+			m_buffers.push_back(buffer);
 		}
 	}
 
+	return NO_ERROR;
+}
+
+int OffscreenNativeWindow::setSwapInterval(int interval)
+{
+	return 0;
+}
+
+void OffscreenNativeWindow::releaseBuffer(unsigned int index)
+{
+	TRACE("%s", __PRETTY_FUNCTION__);
+
+	std::list<OffscreenNativeWindowBuffer*>::iterator iter;
+
+	g_mutex_lock(&m_bufferMutex);
+
+	for (iter = m_buffers.begin(); iter != m_buffers.end(); iter++) {
+		OffscreenNativeWindowBuffer *buffer = *iter;
+
+		if (buffer->index() == index)
+			buffer->setBusy(false);
+	}
+
+	g_mutex_unlock(&m_bufferMutex);
+
+	g_cond_broadcast(&m_nextBufferCondition);
+}
+
+int OffscreenNativeWindow::dequeueBuffer(BaseNativeWindowBuffer **buffer, int *fenceFd)
+{
+	TRACE("%s", __PRETTY_FUNCTION__);
+
+	OffscreenNativeWindowBuffer *selectedBuffer = 0;
+	std::list<OffscreenNativeWindowBuffer*>::iterator iter;
+
+	g_mutex_lock(&m_bufferMutex);
+
+	while (1) {
+		for (iter = m_buffers.begin(); iter != m_buffers.end(); iter++) {
+			OffscreenNativeWindowBuffer *currentBuffer = *iter;
+			if (!currentBuffer->busy()) {
+				TRACE("%s: Found buffer ready to be used", __PRETTY_FUNCTION__);
+
+				selectedBuffer = currentBuffer;
+				selectedBuffer->setBusy(true);
+				break;
+			}
+		}
+
+		if (selectedBuffer)
+			break;
+
+		TRACE("%s: Waiting for buffer to be released", __PRETTY_FUNCTION__);
+		g_cond_wait(&m_nextBufferCondition, &m_bufferMutex);
+	}
+
+	g_mutex_unlock(&m_bufferMutex);
+
 	*buffer = selectedBuffer;
 
-	TRACE("dequeued buffer is %i %p\n", m_tailbuffer, selectedBuffer);
+	return NO_ERROR;
+}
 
-	m_tailbuffer++;
+int OffscreenNativeWindow::queueBuffer(BaseNativeWindowBuffer* buffer, int fenceFd)
+{
+	TRACE("%s", __PRETTY_FUNCTION__);
 
-	if(m_tailbuffer == m_buffercount)
-		m_tailbuffer = 0;
+	OffscreenNativeWindowBuffer* buf = static_cast<OffscreenNativeWindowBuffer*>(buffer);
+
+	// XXX where do we get the window id from?
+	m_surfaceClient.postBuffer(platformWindowId(), buf);
 
 	return NO_ERROR;
 }
 
 int OffscreenNativeWindow::lockBuffer(BaseNativeWindowBuffer* buffer)
 {
-	TRACE("%s\n", __PRETTY_FUNCTION__);
-	return NO_ERROR;
-}
-
-int OffscreenNativeWindow::queueBuffer(BaseNativeWindowBuffer* buffer, int fenceFd)
-{
-	TRACE("%s\n", __PRETTY_FUNCTION__);
-
-	OffscreenNativeWindowBuffer* buf = static_cast<OffscreenNativeWindowBuffer*>(buffer);
-
-	m_frontbuffer++;
-	if (m_frontbuffer == m_buffercount)
-		m_frontbuffer = 0;
-
-	postBuffer(buf);
-
 	return NO_ERROR;
 }
 
 int OffscreenNativeWindow::cancelBuffer(BaseNativeWindowBuffer* buffer, int fenceFd)
 {
-	TRACE("%s\n", __PRETTY_FUNCTION__);
 	return 0;
 }
 
 unsigned int OffscreenNativeWindow::width() const
 {
-	TRACE("%s value: %i\n", __PRETTY_FUNCTION__, m_width);
 	return m_width;
 }
 
 unsigned int OffscreenNativeWindow::height() const
 {
-	TRACE("%s value: %i\n", __PRETTY_FUNCTION__, m_height);
 	return m_height;
 }
 
 unsigned int OffscreenNativeWindow::format() const
 {
-	TRACE("%s value: %i\n", __PRETTY_FUNCTION__, m_format);
 	return m_format;
 }
 
 unsigned int OffscreenNativeWindow::defaultWidth() const
 {
-	TRACE("%s value: %i\n", __PRETTY_FUNCTION__, m_defaultWidth);
 	return m_defaultWidth;
 }
 
 unsigned int OffscreenNativeWindow::defaultHeight() const
 {
-	TRACE("%s value: %i\n", __PRETTY_FUNCTION__, m_defaultHeight);
 	return m_defaultHeight;
 }
 
 unsigned int OffscreenNativeWindow::queueLength() const
 {
-	TRACE("%s\n", __PRETTY_FUNCTION__);
 	return 1;
 }
 
 unsigned int OffscreenNativeWindow::type() const
 {
-	TRACE("%s\n", __PRETTY_FUNCTION__);
 	return NATIVE_WINDOW_SURFACE_TEXTURE_CLIENT;
 }
 
 unsigned int OffscreenNativeWindow::transformHint() const
 {
-	TRACE("%s\n", __PRETTY_FUNCTION__);
 	return 0;
 }
 
 int OffscreenNativeWindow::setBuffersFormat(int format)
 {
-	TRACE("%s format %i\n", __PRETTY_FUNCTION__, format);
 	m_format = format;
 	return NO_ERROR;
 }
 
 int OffscreenNativeWindow::setBuffersDimensions(int width, int height)
 {
-	TRACE("%s size %ix%i\n", __PRETTY_FUNCTION__, width, height);
 	return NO_ERROR;
 }
 
 int OffscreenNativeWindow::setUsage(int usage)
 {
-	TRACE("%s usage %i\n", __PRETTY_FUNCTION__, usage);
 	m_usage = usage;
 	return NO_ERROR;
 }
 
 void OffscreenNativeWindow::resize(unsigned int width, unsigned int height)
 {
-	TRACE("%s width=%i height=%i\n", __PRETTY_FUNCTION__, width, height);
-
 	m_width = width;
 	m_defaultWidth = width;
 	m_height = height;
 	m_defaultHeight = height;
-}
-
-unsigned int OffscreenNativeWindow::bufferCount()
-{
-	return m_buffercount;
 }

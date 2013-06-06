@@ -41,8 +41,9 @@ struct buffer_info_header {
 };
 
 OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer()
-	: _index(0),
-	  mOwner(ownNone)
+	: m_index(0),
+	  m_owner(ownNone),
+	  m_busy(false)
 {
 	ANativeWindowBuffer::width = 0;
 	ANativeWindowBuffer::height = 0;
@@ -54,8 +55,8 @@ OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer()
 
 OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer(unsigned int width, unsigned int height,
 							unsigned int format, unsigned int usage)
-	: _index(0),
-	  mOwner(ownData)
+	: m_index(0),
+	  m_owner(ownData)
 {
 	ANativeWindowBuffer::width = width;
 	ANativeWindowBuffer::height = height;
@@ -71,12 +72,12 @@ OffscreenNativeWindowBuffer::~OffscreenNativeWindowBuffer()
 	hybris_unregister_buffer_handle(ANativeWindowBuffer::handle);
 
 	if (handle) {
-		if (mOwner == ownHandle) {
+		if (m_owner == ownHandle) {
 			hybris_unregister_buffer_handle(handle);
 			native_handle_close(handle);
 			native_handle_delete(const_cast<native_handle*>(handle));
 		}
-		else if (mOwner == ownData) {
+		else if (m_owner == ownData) {
 			BufferAllocator& allocator = BufferAllocator::get();
 			allocator.free(handle);
 		}
@@ -91,7 +92,7 @@ int OffscreenNativeWindowBuffer::writeToFd(int fd)
 	if (!handle)
 		return -EINVAL;
 
-	hdr.index = _index;
+	hdr.index = m_index;
 	hdr.width = width;
 	hdr.height = height;
 	hdr.stride = stride;
@@ -137,7 +138,7 @@ int OffscreenNativeWindowBuffer::readFromFd(int fd)
 	printf("Buffer info: width=%i, height=%i, stride=%i, format=%i usage=%i numFds=%i, numInts=%i\n",
 		   hdr.width, hdr.height, hdr.stride, hdr.format, hdr.usage, hdr.num_fds, hdr.num_ints);
 
-	_index = hdr.index;
+	m_index = hdr.index;
 	width = hdr.width;
 	height = hdr.height;
 	stride = hdr.stride;
@@ -164,7 +165,7 @@ int OffscreenNativeWindowBuffer::readFromFd(int fd)
 
 	hybris_register_buffer_handle(this->handle);
 
-	mOwner = ownHandle;
+	m_owner = ownHandle;
 
 	printf("Successfully received buffer from remote\n");
 
@@ -174,16 +175,6 @@ int OffscreenNativeWindowBuffer::readFromFd(int fd)
 buffer_handle_t OffscreenNativeWindowBuffer::getHandle()
 {
 	return handle;
-}
-
-unsigned int OffscreenNativeWindowBuffer::index()
-{
-	return _index;
-}
-
-void OffscreenNativeWindowBuffer::setIndex(unsigned int index)
-{
-	_index = index;
 }
 
 // vim:ts=4:sw=4:noexpandtab

@@ -34,7 +34,7 @@ public:
 	void onIncomingData();
 	static gboolean onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data);
 
-	void restoreBuffer(int windowId, OffscreenNativeWindowBuffer *buffer);
+	void releaseBuffer(int windowId, OffscreenNativeWindowBuffer *buffer);
 
 protected:
 	virtual void handleIncomingBuffer(int windowId, OffscreenNativeWindowBuffer *buffer);
