@@ -52,16 +52,25 @@ WebosSurfaceManager* WebosSurfaceManager::instance()
 }
 
 WebosSurfaceManager::WebosSurfaceManager()
-	: m_socketPath("/tmp/surface_manager"),
+	: m_socketFd(-1),
 	  m_channel(0),
 	  m_socketWatch(-1),
 	  m_remoteClientFactory(new WebosSurfaceManagerRemoteClientFactoryDefault)
 {
+	m_socketPath = g_strdup("/tmp/surface_manager");
 	setup();
 }
 
 WebosSurfaceManager::~WebosSurfaceManager()
 {
+	if (m_socketWatch > 0)
+		g_source_remove(m_socketWatch);
+
+	if (m_channel != NULL)
+		g_io_channel_shutdown(m_channel, TRUE, NULL);
+
+	if (m_socketFd > 0)
+		close(m_socketFd);
 }
 
 void WebosSurfaceManager::setRemoteClientFactory(WebosSurfaceManagerRemoteClientFactory *factory)

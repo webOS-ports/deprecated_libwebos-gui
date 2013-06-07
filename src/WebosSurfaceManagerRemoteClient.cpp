@@ -45,6 +45,14 @@ WebosSurfaceManagerRemoteClient::WebosSurfaceManagerRemoteClient(WebosSurfaceMan
 
 WebosSurfaceManagerRemoteClient::~WebosSurfaceManagerRemoteClient()
 {
+	if (m_socketWatch > 0)
+		g_source_remove(m_socketWatch);
+
+	if (m_channel != NULL)
+		g_io_channel_shutdown(m_channel, TRUE, NULL);
+
+	if (m_socketFd > 0)
+		close(m_socketFd);
 }
 
 gboolean WebosSurfaceManagerRemoteClient::onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data)
@@ -66,7 +74,6 @@ void WebosSurfaceManagerRemoteClient::onIncomingData()
 	ret = read(m_socketFd, &hdr, sizeof(WebosMessageHeader));
 	if (ret <= 0) {
 		g_message("%s: Client closed connection; removing ...", __PRETTY_FUNCTION__);
-		close(m_socketFd);
 		m_parent->onClientDisconnected(this);
 		return;
 	}
@@ -74,13 +81,25 @@ void WebosSurfaceManagerRemoteClient::onIncomingData()
 	switch (hdr.command) {
 	case WEBOS_MESSAGE_TYPE_IDENTIFY:
 		ret = read(m_socketFd, &windowId, sizeof(unsigned int));
+		if (ret <= 0) {
+			g_warning("%s: Failed to read window identifier", __PRETTY_FUNCTION__);
+			m_parent->onClientDisconnected(this);
+			return;
+		}
+
 		handleIdentify(windowId);
 		break;
 	case WEBOS_MESSAGE_TYPE_POST_BUFFER:
 		buffer = new OffscreenNativeWindowBuffer();
 		buffer->incStrong(0);
 
-		buffer->readFromFd(m_socketFd);
+		ret = buffer->readFromFd(m_socketFd);
+		if (ret < 0) {
+			g_warning("%s: Failed to read buffer", __PRETTY_FUNCTION__);
+			m_parent->onClientDisconnected(this);
+			return;
+		}
+
 		handleIncomingBuffer(buffer);
 		break;
 	default:
@@ -102,21 +121,23 @@ void WebosSurfaceManagerRemoteClient::releaseBuffer(OffscreenNativeWindowBuffer 
 {
 	WebosMessageHeader hdr;
 	int ret;
-
-	g_message("%s: index=%i", __PRETTY_FUNCTION__, buffer->index());
+	unsigned int bufferIndex;
 
 	memset(&hdr, 0, sizeof(WebosMessageHeader));
 	hdr.command = WEBOS_MESSAGE_TYPE_RELEASE_BUFFER;
 
-	// XXX: add proper error checking
 	ret = write(m_socketFd, &hdr, sizeof(WebosMessageHeader));
 	if (ret <= 0) {
 		g_warning("%s: Failed to write message header", __PRETTY_FUNCTION__);
+		m_parent->onClientDisconnected(this);
+		return;
 	}
 
-	unsigned int bufferIndex = buffer->index();
+	bufferIndex = buffer->index();
 	ret = write(m_socketFd, &bufferIndex, sizeof(unsigned int));
 	if (ret <= 0) {
 		g_warning("%s: Failed towriter buffer index", __PRETTY_FUNCTION__);
+		m_parent->onClientDisconnected(this);
+		return;
 	}
 }
