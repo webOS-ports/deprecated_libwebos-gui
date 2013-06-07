@@ -22,7 +22,11 @@
 
 #include "OffscreenNativeWindow.h"
 
+#ifdef DEBUG
 #define TRACE(message, ...) g_message(message, ##__VA_ARGS__)
+#else
+#define TRACE(message, ...)
+#endif
 
 OffscreenNativeWindow::OffscreenNativeWindow(unsigned int aWidth, unsigned int aHeight, unsigned int aFormat)
 	: m_width(aWidth)
@@ -89,7 +93,7 @@ int OffscreenNativeWindow::setSwapInterval(int interval)
 
 void OffscreenNativeWindow::releaseBuffer(unsigned int index)
 {
-	TRACE("%s", __PRETTY_FUNCTION__);
+	TRACE("%s: index=%i", __PRETTY_FUNCTION__, index);
 
 	std::list<OffscreenNativeWindowBuffer*>::iterator iter;
 
@@ -98,13 +102,16 @@ void OffscreenNativeWindow::releaseBuffer(unsigned int index)
 	for (iter = m_buffers.begin(); iter != m_buffers.end(); iter++) {
 		OffscreenNativeWindowBuffer *buffer = *iter;
 
-		if (buffer->index() == index)
+		if (buffer->index() == index) {
+			TRACE("%s: buffer with index=%i isn't busy anymore", __PRETTY_FUNCTION__, index);
 			buffer->setBusy(false);
+		}
 	}
 
 	g_mutex_unlock(&m_bufferMutex);
 
-	g_cond_broadcast(&m_nextBufferCondition);
+	TRACE("%s: notifying all clients that we have a new free buffer", __PRETTY_FUNCTION__);
+	g_cond_signal(&m_nextBufferCondition);
 }
 
 int OffscreenNativeWindow::dequeueBuffer(BaseNativeWindowBuffer **buffer, int *fenceFd)
@@ -133,6 +140,19 @@ int OffscreenNativeWindow::dequeueBuffer(BaseNativeWindowBuffer **buffer, int *f
 
 		TRACE("%s: Waiting for buffer to be released", __PRETTY_FUNCTION__);
 		g_cond_wait(&m_nextBufferCondition, &m_bufferMutex);
+		TRACE("%s: Got notified that we have a new buffer available", __PRETTY_FUNCTION__);
+	}
+
+	// check wether buffer already has the right size
+	if (selectedBuffer->width != m_width || selectedBuffer->height != m_height) {
+		TRACE("%s buffer and window size doesn't match: recreating buffer ...\n", __PRETTY_FUNCTION__);
+
+		m_buffers.remove(selectedBuffer);
+		// Let the current buffer be cleared up by it's own
+		selectedBuffer->decStrong(0);
+
+		selectedBuffer = allocateBuffer();
+		m_buffers.push_back(selectedBuffer);
 	}
 
 	g_mutex_unlock(&m_bufferMutex);

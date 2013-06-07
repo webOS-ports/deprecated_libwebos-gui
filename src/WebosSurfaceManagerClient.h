@@ -48,11 +48,10 @@ private:
     GThread *m_thread;
     GMainLoop *m_mainLoop;
     IBufferManager *m_bufferManager;
+    GMutex m_socketMutex;
 
 private:
     static gpointer startupCallback(gpointer user_data);
-    static gboolean onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data);
-
     void onIncomingData();
     void startup();
 };

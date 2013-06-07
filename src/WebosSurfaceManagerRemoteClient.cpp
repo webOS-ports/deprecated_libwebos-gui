@@ -103,11 +103,20 @@ void WebosSurfaceManagerRemoteClient::releaseBuffer(OffscreenNativeWindowBuffer 
 	WebosMessageHeader hdr;
 	int ret;
 
+	g_message("%s: index=%i", __PRETTY_FUNCTION__, buffer->index());
+
 	memset(&hdr, 0, sizeof(WebosMessageHeader));
 	hdr.command = WEBOS_MESSAGE_TYPE_RELEASE_BUFFER;
 
 	// XXX: add proper error checking
 	ret = write(m_socketFd, &hdr, sizeof(WebosMessageHeader));
+	if (ret <= 0) {
+		g_warning("%s: Failed to write message header", __PRETTY_FUNCTION__);
+	}
+
 	unsigned int bufferIndex = buffer->index();
 	ret = write(m_socketFd, &bufferIndex, sizeof(unsigned int));
+	if (ret <= 0) {
+		g_warning("%s: Failed towriter buffer index", __PRETTY_FUNCTION__);
+	}
 }

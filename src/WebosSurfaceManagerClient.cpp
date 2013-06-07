@@ -23,6 +23,11 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <sys/fcntl.h>
+
 #include "WebosMessages.h"
 #include "WebosSurfaceManagerClient.h"
 #include "OffscreenNativeWindow.h"
@@ -34,11 +39,15 @@ WebosSurfaceManagerClient::WebosSurfaceManagerClient(IBufferManager *manager)
       m_bufferManager(manager)
 {
     m_socketPath = g_strdup("/tmp/surface_manager");
+    g_mutex_init(&m_socketMutex);
+
     m_thread = g_thread_new("surface_client", WebosSurfaceManagerClient::startupCallback, this);
+    assert(m_thread != g_thread_self());
 }
 
 WebosSurfaceManagerClient::~WebosSurfaceManagerClient()
 {
+    g_mutex_clear(&m_socketMutex);
 }
 
 gpointer WebosSurfaceManagerClient::startupCallback(gpointer user_data)
@@ -51,15 +60,9 @@ gpointer WebosSurfaceManagerClient::startupCallback(gpointer user_data)
 void WebosSurfaceManagerClient::startup()
 {
     struct sockaddr_un socketAddr;
-    GMainContext *context;
+    int ret;
 
-    g_message("%s: starting thread to handle client communication ...", __PRETTY_FUNCTION__);
-
-    // create new context and mainloop for our thread
-    context = g_main_context_new();
-    g_main_context_push_thread_default(context);
-
-    m_mainLoop = g_main_loop_new(context, FALSE);
+    assert(g_thread_self() == m_thread);
 
     m_socketFd = ::socket(PF_LOCAL, SOCK_STREAM, 0);
     if (m_socketFd < 0) {
@@ -80,18 +83,21 @@ void WebosSurfaceManagerClient::startup()
         return;
     }
 
-    m_channel =  g_io_channel_unix_new(m_socketFd);
-    m_socketWatch = g_io_add_watch_full(m_channel, G_PRIORITY_DEFAULT, G_IO_IN,
-                                        onIncomingDataCb, this, NULL);
+    while(1) {
+        fd_set fds;
 
-    g_main_loop_run(m_mainLoop);
-}
+        FD_ZERO(&fds);
+        FD_SET(m_socketFd, &fds);
 
-gboolean WebosSurfaceManagerClient::onIncomingDataCb(GIOChannel *channel, GIOCondition condition, gpointer user_data)
-{
-    WebosSurfaceManagerClient *client = reinterpret_cast<WebosSurfaceManagerClient*>(user_data);
-    client->onIncomingData();
-    return TRUE;
+        ret = select(m_socketFd+1, &fds, NULL, NULL, NULL);
+        if (ret <= 0) {
+            g_warning("%s: connection was closed from server site", __PRETTY_FUNCTION__);
+            break;
+        }
+        else if (ret && FD_ISSET(m_socketFd, &fds)) {
+            onIncomingData();
+        }
+    }
 }
 
 void WebosSurfaceManagerClient::onIncomingData()
@@ -122,18 +128,16 @@ void WebosSurfaceManagerClient::onIncomingData()
         }
 
         m_bufferManager->releaseBuffer(bufferIndex);
-
         break;
     default:
         g_warning("%s: unhandled message type %i",
                   __PRETTY_FUNCTION__, hdr.command);
+        break;
     }
 }
 
 void WebosSurfaceManagerClient::identify(unsigned int windowId)
 {
-    g_message("%s: windowId=%i", __PRETTY_FUNCTION__, windowId);
-
     WebosMessageHeader hdr;
     int ret;
 
@@ -146,7 +150,6 @@ void WebosSurfaceManagerClient::identify(unsigned int windowId)
 
 void WebosSurfaceManagerClient::postBuffer(OffscreenNativeWindowBuffer *buffer)
 {
-    g_message("%s: index=%i", __PRETTY_FUNCTION__, buffer->index());
     WebosMessageHeader hdr;
     int ret;
 
@@ -154,6 +157,5 @@ void WebosSurfaceManagerClient::postBuffer(OffscreenNativeWindowBuffer *buffer)
     hdr.command = WEBOS_MESSAGE_TYPE_POST_BUFFER;
 
     ret = write(m_socketFd, &hdr, sizeof(WebosMessageHeader));
-
     buffer->writeToFd(m_socketFd);
 }

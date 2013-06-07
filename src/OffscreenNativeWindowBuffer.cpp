@@ -56,7 +56,8 @@ OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer()
 OffscreenNativeWindowBuffer::OffscreenNativeWindowBuffer(unsigned int width, unsigned int height,
 							unsigned int format, unsigned int usage)
 	: m_index(0),
-	  m_owner(ownData)
+	  m_owner(ownData),
+	  m_busy(false)
 {
 	ANativeWindowBuffer::width = width;
 	ANativeWindowBuffer::height = height;
