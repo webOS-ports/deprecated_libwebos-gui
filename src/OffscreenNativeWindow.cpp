@@ -130,7 +130,6 @@ int OffscreenNativeWindow::dequeueBuffer(BaseNativeWindowBuffer **buffer, int *f
 				TRACE("%s: Found buffer ready to be used", __PRETTY_FUNCTION__);
 
 				selectedBuffer = currentBuffer;
-				selectedBuffer->setBusy(true);
 				break;
 			}
 		}
@@ -154,6 +153,8 @@ int OffscreenNativeWindow::dequeueBuffer(BaseNativeWindowBuffer **buffer, int *f
 		selectedBuffer = allocateBuffer();
 		m_buffers.push_back(selectedBuffer);
 	}
+
+	selectedBuffer->setBusy(true);
 
 	g_mutex_unlock(&m_bufferMutex);
 
