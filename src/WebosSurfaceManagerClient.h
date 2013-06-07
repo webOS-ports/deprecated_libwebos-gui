@@ -43,12 +43,8 @@ public:
 private:
     int m_socketFd;
     gchar *m_socketPath;
-    GIOChannel *m_channel;
-    guint m_socketWatch;
     GThread *m_thread;
-    GMainLoop *m_mainLoop;
     IBufferManager *m_bufferManager;
-    GMutex m_socketMutex;
 
 private:
     static gpointer startupCallback(gpointer user_data);

@@ -34,12 +34,9 @@
 
 WebosSurfaceManagerClient::WebosSurfaceManagerClient(IBufferManager *manager)
     : m_socketFd(-1),
-      m_channel(0),
-      m_socketWatch(0),
       m_bufferManager(manager)
 {
     m_socketPath = g_strdup("/tmp/surface_manager");
-    g_mutex_init(&m_socketMutex);
 
     m_thread = g_thread_new("surface_client", WebosSurfaceManagerClient::startupCallback, this);
     assert(m_thread != g_thread_self());
@@ -47,7 +44,7 @@ WebosSurfaceManagerClient::WebosSurfaceManagerClient(IBufferManager *manager)
 
 WebosSurfaceManagerClient::~WebosSurfaceManagerClient()
 {
-    g_mutex_clear(&m_socketMutex);
+    g_thread_join(m_thread);
 }
 
 gpointer WebosSurfaceManagerClient::startupCallback(gpointer user_data)
@@ -98,6 +95,9 @@ void WebosSurfaceManagerClient::startup()
             onIncomingData();
         }
     }
+
+    close(m_socketFd);
+    m_socketFd = -1;
 }
 
 void WebosSurfaceManagerClient::onIncomingData()
@@ -145,7 +145,16 @@ void WebosSurfaceManagerClient::identify(unsigned int windowId)
     hdr.command = WEBOS_MESSAGE_TYPE_IDENTIFY;
 
     ret = write(m_socketFd, &hdr, sizeof(WebosMessageHeader));
+    if (ret != sizeof(WebosMessageHeader)) {
+        g_critical("%s: Failed to write header!", __PRETTY_FUNCTION__);
+        return;
+    }
+
     ret = write(m_socketFd, &windowId, sizeof(unsigned int));
+    if (ret != sizeof(unsigned int)) {
+        g_critical("%s: Failed to write window id!", __PRETTY_FUNCTION__);
+        return;
+    }
 }
 
 void WebosSurfaceManagerClient::postBuffer(OffscreenNativeWindowBuffer *buffer)
@@ -157,5 +166,14 @@ void WebosSurfaceManagerClient::postBuffer(OffscreenNativeWindowBuffer *buffer)
     hdr.command = WEBOS_MESSAGE_TYPE_POST_BUFFER;
 
     ret = write(m_socketFd, &hdr, sizeof(WebosMessageHeader));
-    buffer->writeToFd(m_socketFd);
+    if (ret != sizeof(WebosMessageHeader)) {
+        g_critical("%s: Failed to write header!", __PRETTY_FUNCTION__);
+        return;
+    }
+
+    ret = buffer->writeToFd(m_socketFd);
+    if (ret < 0) {
+        g_critical("%s: Failed to send buffer to remote!", __PRETTY_FUNCTION__);
+        return;
+    }
 }
