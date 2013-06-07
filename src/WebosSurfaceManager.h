@@ -20,6 +20,7 @@
 #define HYBRISBUFFERSERVER_H_
 
 #include <glib.h>
+#include <list>
 
 class WebosSurfaceManagerRemoteClient;
 class WebosSurfaceManagerRemoteClientFactory;
@@ -34,6 +35,8 @@ public:
 	void onNewConnection();
 	void onClientDisconnected(WebosSurfaceManagerRemoteClient *client);
 
+	WebosSurfaceManagerRemoteClient* findClient(unsigned int windowId);
+
 private:
 	WebosSurfaceManager();
 	~WebosSurfaceManager();
@@ -46,6 +49,7 @@ private:
 	GIOChannel *m_channel;
 	gint m_socketWatch;
 	WebosSurfaceManagerRemoteClientFactory *m_remoteClientFactory;
+	std::list<WebosSurfaceManagerRemoteClient*> m_clients;
 };
 
 #endif /* HYBRISBUFFERSERVER_H_ */

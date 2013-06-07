@@ -133,6 +133,7 @@ gboolean WebosSurfaceManager::onNewConnectionCb(GIOChannel *channel, GIOConditio
 
 void WebosSurfaceManager::onClientDisconnected(WebosSurfaceManagerRemoteClient *client)
 {
+	m_clients.remove(client);
 	delete client;
 }
 
@@ -155,4 +156,22 @@ void WebosSurfaceManager::onNewConnection()
 	}
 
 	WebosSurfaceManagerRemoteClient *client = m_remoteClientFactory->create(this, clientSocketFd);
+	m_clients.push_back(client);
+}
+
+WebosSurfaceManagerRemoteClient* WebosSurfaceManager::findClient(unsigned int windowId)
+{
+	WebosSurfaceManagerRemoteClient *client = 0;
+	std::list<WebosSurfaceManagerRemoteClient*>::iterator iter;
+
+	for (iter = m_clients.begin(); iter != m_clients.end(); iter++) {
+		WebosSurfaceManagerRemoteClient *currentClient = *iter;
+
+		if (currentClient->winId() == windowId) {
+			client = currentClient;
+			break;
+		}
+	}
+
+	return client;
 }
