@@ -36,7 +36,8 @@ WebosSurfaceManagerRemoteClient::WebosSurfaceManagerRemoteClient(WebosSurfaceMan
 	: m_parent(parent),
 	  m_socketFd(socketFd),
 	  m_channel(0),
-	  m_socketWatch(0)
+	  m_socketWatch(0),
+	  m_winId(-1)
 {
 	m_channel =  g_io_channel_unix_new(m_socketFd);
 	m_socketWatch = g_io_add_watch_full(m_channel, G_PRIORITY_DEFAULT, G_IO_IN,
@@ -87,6 +88,7 @@ void WebosSurfaceManagerRemoteClient::onIncomingData()
 			return;
 		}
 
+		m_winId = windowId;
 		handleIdentify(windowId);
 		break;
 	case WEBOS_MESSAGE_TYPE_POST_BUFFER:

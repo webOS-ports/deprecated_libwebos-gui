@@ -36,6 +36,8 @@ public:
 
 	void releaseBuffer(OffscreenNativeWindowBuffer *buffer);
 
+	unsigned int winId() const { return m_winId; }
+
 protected:
 	virtual void handleIdentify(unsigned int windowId);
 	virtual void handleIncomingBuffer(OffscreenNativeWindowBuffer *buffer);
@@ -45,6 +47,7 @@ private:
 	int m_socketFd;
 	GIOChannel *m_channel;
 	gint m_socketWatch;
+	unsigned int m_winId;
 };
 
 class WebosSurfaceManagerRemoteClientFactory
