@@ -136,9 +136,6 @@ int OffscreenNativeWindowBuffer::readFromFd(int fd)
 	if (ret < 0 || ret != sizeof(struct buffer_info_header))
 		return -EIO;
 
-	printf("Buffer info: width=%i, height=%i, stride=%i, format=%i usage=%i numFds=%i, numInts=%i\n",
-		   hdr.width, hdr.height, hdr.stride, hdr.format, hdr.usage, hdr.num_fds, hdr.num_ints);
-
 	m_index = hdr.index;
 	width = hdr.width;
 	height = hdr.height;
@@ -167,8 +164,6 @@ int OffscreenNativeWindowBuffer::readFromFd(int fd)
 	hybris_register_buffer_handle(this->handle);
 
 	m_owner = ownHandle;
-
-	printf("Successfully received buffer from remote\n");
 
 	return 0;
 }
