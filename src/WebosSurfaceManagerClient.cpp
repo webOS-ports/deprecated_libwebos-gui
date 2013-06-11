@@ -87,7 +87,7 @@ void WebosSurfaceManagerClient::startup()
         FD_SET(m_socketFd, &fds);
 
         ret = select(m_socketFd+1, &fds, NULL, NULL, NULL);
-        if (ret <= 0) {
+        if (ret < 0) {
             g_warning("%s: connection was closed from server site", __PRETTY_FUNCTION__);
             break;
         }
