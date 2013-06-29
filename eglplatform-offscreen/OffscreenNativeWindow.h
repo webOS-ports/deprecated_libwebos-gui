@@ -7,52 +7,21 @@
 #include <hybris/eglplatformcommon/nativewindowbase.h>
 #include <glib.h>
 
+#include <EGL/egl.h>
+
 #include "WebosSurfaceManagerClient.h"
 
-class OffscreenNativeWindowBuffer : public BaseNativeWindowBuffer
-{
-	friend class OffscreenNativeWindow;
-
-protected:
-	OffscreenNativeWindowBuffer(unsigned int width, unsigned int height,
-								unsigned int format, unsigned int usage);
-
-public:
-	OffscreenNativeWindowBuffer();
-	~OffscreenNativeWindowBuffer();
-
-	int writeToFd(int fd);
-	int readFromFd(int fd);
-
-	buffer_handle_t getHandle();
-
-	unsigned int index() const { return m_index; }
-	void setIndex(unsigned int index) { m_index = index; }
-
-	bool busy() const { return m_busy; }
-	bool setBusy(bool busy) { m_busy = busy; }
-
-private:
-	enum {
-		ownNone = 0,
-		ownHandle = 1,
-		ownData = 2,
-	};
-
-private:
-	unsigned int m_index;
-	uint8_t m_owner;
-	bool m_busy;
-};
+class OffscreenNativeWindowBuffer;
 
 class OffscreenNativeWindow : public BaseNativeWindow, public IBufferManager
 {
 public:
-	OffscreenNativeWindow(unsigned int width, unsigned int height, unsigned int format = 5);
+	OffscreenNativeWindow(WebosSurfaceManagerClient *ipSurfaceClient);
 	~OffscreenNativeWindow();
 
 	void identify(unsigned int windowId);
 	void resize(unsigned int width, unsigned int height);
+	EGLNativeWindowType getNativeWindow();
 
 	virtual void releaseBuffer(unsigned int index);
 
@@ -84,7 +53,7 @@ private:
 	unsigned int m_defaultHeight;
 	unsigned int m_usage;
 	std::list<OffscreenNativeWindowBuffer*> m_buffers;
-	WebosSurfaceManagerClient m_surfaceClient;
+	WebosSurfaceManagerClient *m_surfaceClient;
 	GMutex m_bufferMutex;
 	GCond m_nextBufferCondition;
 private:

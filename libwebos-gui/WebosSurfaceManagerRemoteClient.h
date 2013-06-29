@@ -21,7 +21,7 @@
 
 #include <glib.h>
 
-#include "OffscreenNativeWindow.h"
+#include "OffscreenNativeWindowBuffer.h"
 
 class WebosSurfaceManager;
 

@@ -21,23 +21,41 @@
 #include <glib.h>
 #include <string>
 
-#include <EGL/eglhybris.h>
+#include <EGL/egl.h>
 
 class OffscreenNativeWindowBuffer;
 
 class IBufferManager
 {
 public:
+    virtual void resize(unsigned int width, unsigned int height) = 0;
     virtual void releaseBuffer(unsigned int index) = 0;
 };
 
-class WebosSurfaceManagerClient
+class IWebosEglWindow
 {
 public:
-    WebosSurfaceManagerClient(IBufferManager *manager);
+    virtual void identify(unsigned int windowId) = 0;
+    virtual void resize(unsigned int width, unsigned int height) = 0;
+    virtual EGLNativeWindowType getNativeWindow() = 0;
+};
+
+class WebosSurfaceManagerClient: public IWebosEglWindow
+{
+public:
+    WebosSurfaceManagerClient();
     ~WebosSurfaceManagerClient();
 
+    void setBufferManager(IBufferManager *manager);
+    void init();
+
+    static void CreateNativeWindow(IWebosEglWindow *&oWebosNativeWindow);
+
+    /* IWebosEglWindow interface */
     void identify(unsigned int winId);
+    void resize(unsigned int width, unsigned int height);
+    EGLNativeWindowType getNativeWindow();
+
     void postBuffer(OffscreenNativeWindowBuffer *buffer);
 
 private:
@@ -45,6 +63,7 @@ private:
     gchar *m_socketPath;
     GThread *m_thread;
     IBufferManager *m_bufferManager;
+    EGLNativeWindowType m_NativeWindow;
 
 private:
     static gpointer startupCallback(gpointer user_data);

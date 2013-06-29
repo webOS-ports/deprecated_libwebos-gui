@@ -28,23 +28,47 @@
 #include <sys/time.h>
 #include <sys/fcntl.h>
 
+#include <EGL/egl.h>
+extern "C" {
+#include <hybris/eglplatformcommon/ws.h>
+}
+
 #include "WebosMessages.h"
 #include "WebosSurfaceManagerClient.h"
-#include "OffscreenNativeWindow.h"
+#include "OffscreenNativeWindowBuffer.h"
 
-WebosSurfaceManagerClient::WebosSurfaceManagerClient(IBufferManager *manager)
+WebosSurfaceManagerClient::WebosSurfaceManagerClient()
     : m_socketFd(-1),
-      m_bufferManager(manager)
+      m_bufferManager(0),
+      m_NativeWindow(0),
+      m_thread(0)
 {
     m_socketPath = g_strdup("/tmp/surface_manager");
-
-    m_thread = g_thread_new("surface_client", WebosSurfaceManagerClient::startupCallback, this);
-    assert(m_thread != g_thread_self());
 }
 
 WebosSurfaceManagerClient::~WebosSurfaceManagerClient()
 {
     g_thread_join(m_thread);
+}
+
+void WebosSurfaceManagerClient::CreateNativeWindow(IWebosEglWindow *&oWebosEglWindow)
+{
+    WebosSurfaceManagerClient *pNewSurfaceManagerClient = new WebosSurfaceManagerClient();
+    oWebosEglWindow = dynamic_cast<IWebosEglWindow*>(pNewSurfaceManagerClient);
+
+    pNewSurfaceManagerClient->m_NativeWindow =  ws_CreateWindow((EGLNativeWindowType)oWebosEglWindow, EGL_DEFAULT_DISPLAY);
+    pNewSurfaceManagerClient->init();
+}
+
+void WebosSurfaceManagerClient::setBufferManager(IBufferManager *manager)
+{
+    m_bufferManager = manager;
+}
+
+void WebosSurfaceManagerClient::init()
+{
+    m_thread = g_thread_new("surface_client", WebosSurfaceManagerClient::startupCallback, this);
+    assert(m_thread != g_thread_self());
 }
 
 gpointer WebosSurfaceManagerClient::startupCallback(gpointer user_data)
@@ -177,3 +201,16 @@ void WebosSurfaceManagerClient::postBuffer(OffscreenNativeWindowBuffer *buffer)
         return;
     }
 }
+
+void WebosSurfaceManagerClient::resize(unsigned int width, unsigned int height)
+{
+    if (m_bufferManager) {
+        m_bufferManager->resize(width, height);
+    }
+}
+
+EGLNativeWindowType WebosSurfaceManagerClient::getNativeWindow()
+{
+    return m_NativeWindow;
+}
+
