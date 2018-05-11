@@ -32,6 +32,8 @@
 #include "WebosSurfaceManager.h"
 #include "WebosSurfaceManagerRemoteClient.h"
 
+#include "OffscreenNativeWindowBuffer.h"
+
 WebosSurfaceManagerRemoteClient::WebosSurfaceManagerRemoteClient(WebosSurfaceManager *parent, int socketFd)
 	: m_parent(parent),
 	  m_socketFd(socketFd),

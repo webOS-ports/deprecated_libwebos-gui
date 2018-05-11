@@ -1,26 +1,6 @@
 NULL =
 
-lib_LTLIBRARIES = libwebos-gui.la
-
-libwebos_gui_la_SOURCES = \
-	src/util/fdpass.c \
-	src/OffscreenNativeWindowBuffer.cpp \
-	src/OffscreenNativeWindow.cpp \
-	src/WebosSurfaceManagerClient.cpp \
-	src/WebosSurfaceManager.cpp \
-	src/WebosSurfaceManagerRemoteClient.cpp \
-	src/BufferAllocator.cpp
-libwebos_gui_la_CPPFLAGS = $(GLIB_CFLAGS)
-libwebos_gui_la_LIBADD = $(GLIB_LIBS) -lhybris-eglplatformcommon
-
-libwebos_guidir = $(includedir)/webos-gui
-libwebos_gui_DATA = \
-	src/OffscreenNativeWindow.h \
-	src/WebosSurfaceManagerClient.h \
-	src/WebosSurfaceManager.h \
-	src/WebosSurfaceManagerRemoteClient.h
-
-libwebos_gui_la_LDFLAGS = -version-info "1":"0":"0"
+SUBDIRS = libwebos-gui eglplatform-offscreen
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = webos-gui.pc

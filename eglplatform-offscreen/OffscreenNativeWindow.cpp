@@ -20,7 +20,10 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "OffscreenNativeWindowBuffer.h"
 #include "OffscreenNativeWindow.h"
+
+#include "WebosSurfaceManagerClient.h"
 
 #ifdef DEBUG
 #define TRACE(message, ...) g_message(message, ##__VA_ARGS__)
@@ -28,19 +31,20 @@
 #define TRACE(message, ...)
 #endif
 
-OffscreenNativeWindow::OffscreenNativeWindow(unsigned int aWidth, unsigned int aHeight, unsigned int aFormat)
-	: m_width(aWidth)
-	, m_height(aHeight)
-	, m_defaultWidth(aWidth)
-	, m_defaultHeight(aHeight)
-	, m_format(aFormat)
+OffscreenNativeWindow::OffscreenNativeWindow(WebosSurfaceManagerClient *ipSurfaceClient)
+	: m_width(0)
+	, m_height(0)
+	, m_defaultWidth(0)
+	, m_defaultHeight(0)
+	, m_format(5)
 	, m_usage(GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_TEXTURE)
-	, m_surfaceClient(this)
+	, m_surfaceClient(ipSurfaceClient)
 {
 	// set refcount manually here as we're not caring about references of the native
 	// window yet
 	refcount = 1;
 
+	ipSurfaceClient->setBufferManager(this);
 	setBufferCount(3);
 
 	g_mutex_init(&m_bufferMutex);
@@ -52,11 +56,20 @@ OffscreenNativeWindow::~OffscreenNativeWindow()
 	// XXX cleanup all used buffers
 	g_cond_clear(&m_nextBufferCondition);
 	g_mutex_clear(&m_bufferMutex);
+
+	if (m_surfaceClient) delete m_surfaceClient; m_surfaceClient = NULL;
 }
 
 void OffscreenNativeWindow::identify(unsigned int windowId)
 {
-	m_surfaceClient.identify(windowId);
+	if (m_surfaceClient) {
+		m_surfaceClient->identify(windowId);
+	}
+}
+
+EGLNativeWindowType OffscreenNativeWindow::getNativeWindow()
+{
+	return (EGLNativeWindowType)(*this);
 }
 
 OffscreenNativeWindowBuffer* OffscreenNativeWindow::allocateBuffer()
@@ -168,7 +181,9 @@ int OffscreenNativeWindow::queueBuffer(BaseNativeWindowBuffer* buffer, int fence
 	TRACE("%s", __PRETTY_FUNCTION__);
 
 	OffscreenNativeWindowBuffer* buf = static_cast<OffscreenNativeWindowBuffer*>(buffer);
-	m_surfaceClient.postBuffer(buf);
+	if (m_surfaceClient) {
+		m_surfaceClient->postBuffer(buf);
+	}
 
 	return NO_ERROR;
 }
@@ -231,6 +246,7 @@ int OffscreenNativeWindow::setBuffersFormat(int format)
 
 int OffscreenNativeWindow::setBuffersDimensions(int width, int height)
 {
+	resize(width, height);
 	return NO_ERROR;
 }
 

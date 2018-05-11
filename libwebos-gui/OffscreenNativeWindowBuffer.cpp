@@ -25,8 +25,9 @@
 
 #include <EGL/eglhybris.h>
 
+#include "OffscreenNativeWindowBuffer.h"
+
 #include "util/fdpass.h"
-#include "OffscreenNativeWindow.h"
 #include "BufferAllocator.h"
 
 struct buffer_info_header {
